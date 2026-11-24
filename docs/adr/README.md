@@ -26,6 +26,7 @@
 | [0016](0016-archguard-scanner.md) | ArchGuard scanner в анализаторе + submodules | Принято |
 | [0017](0017-projects-ux.md) | Два таба, пагинация проектов и прогресс сканирования | Принято |
 | [0018](0018-api-catalog.md) | API-каталог вместо Redoc | Принято |
+| [0019](0019-forceatlas2-graph.md) | ForceAtlas2 и перетаскиваемые узлы графа | Принято |
 
 ## Шаблон записи
 

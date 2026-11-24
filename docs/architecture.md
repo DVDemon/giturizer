@@ -235,8 +235,9 @@ artifacts(id, run_id, kind, path, content bytea/text)          -- dsl, openapi.y
 
 Свой вьюер ([ADR-0003](adr/0003-frontend-viewer.md)):
 
-- **Cytoscape.js** — интерактивный граф зависимостей (компоненты/сервисы), drill-down по узлам,
-  фильтры, подсветка транзитивных зависимостей.
+- **Cytoscape.js** — интерактивный граф зависимостей (компоненты/сервисы), раскладка
+  **ForceAtlas2** (`graphology-layout-forceatlas2`), перетаскиваемые узлы, drill-down,
+  фильтры и подсветка транзитивных зависимостей.
 - **Mermaid** — рендер C4-диаграмм (System Context / Container / Component) из модели.
 - **API-каталог** — единый поиск/фильтры по всем операциям (OpenAPI/annotations/gRPC/GraphQL),
   панель деталей и deep links без конфликта с hash-роутингом.

@@ -1,4 +1,6 @@
 import cytoscape from "cytoscape";
+import { MultiGraph } from "graphology";
+import forceAtlas2 from "graphology-layout-forceatlas2";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "../api";
@@ -80,9 +82,11 @@ function collectLegend(workspace: Record<string, unknown>): LegendItem[] {
 
 export function GraphView({ runId, workspace }: GraphViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const cyRef = useRef<cytoscape.Core | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [dependencies, setDependencies] = useState<Dependency[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [layoutRun, setLayoutRun] = useState(0);
   const legend = useMemo(() => collectLegend(workspace), [workspace]);
 
   useEffect(() => {
@@ -96,10 +100,12 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
     for (const system of asArray(model.softwareSystems)) {
       nodes.push({
         data: { id: system.id, label: system.name, kind: "system" },
+        grabbable: true,
       });
       for (const container of asArray(system.containers)) {
         nodes.push({
           data: { id: container.id, label: container.name, kind: "container" },
+          grabbable: true,
         });
         edges.push({
           data: {
@@ -118,6 +124,7 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
               label: component.name,
               kind: "component",
             },
+            grabbable: true,
           });
           edges.push({
             data: {
@@ -149,6 +156,63 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
         classes: isInclude ? "include" : "network",
       });
     }
+
+    const layoutGraph = new MultiGraph();
+    const uniqueNodes = [
+      ...new Map(nodes.map((node) => [String(node.data.id), node])).values(),
+    ];
+    uniqueNodes.sort((left, right) => {
+      const kindOrder = (kind: unknown) =>
+        kind === "system" ? 0 : kind === "container" ? 1 : 2;
+      const byKind = kindOrder(left.data.kind) - kindOrder(right.data.kind);
+      return byKind || String(left.data.label).localeCompare(String(right.data.label));
+    });
+    uniqueNodes.forEach((node, index) => {
+      const kind = String(node.data.kind ?? "");
+      const angle = index * 2.399963229728653 + layoutRun * 0.37;
+      const radius = 120 + Math.sqrt(index + 1) * 45;
+      layoutGraph.addNode(String(node.data.id), {
+        x: Math.cos(angle) * radius,
+        y: Math.sin(angle) * radius,
+        size: kind === "system" ? 60 : kind === "container" ? 45 : 30,
+      });
+    });
+    for (const edge of edges) {
+      const source = String(edge.data.source ?? "");
+      const target = String(edge.data.target ?? "");
+      if (!layoutGraph.hasNode(source) || !layoutGraph.hasNode(target)) {
+        continue;
+      }
+      layoutGraph.addEdgeWithKey(String(edge.data.id), source, target, {
+        weight: edge.classes?.includes("parent") ? 0.7 : 1,
+      });
+    }
+    if (layoutGraph.order > 1) {
+      const inferred = forceAtlas2.inferSettings(layoutGraph.order);
+      forceAtlas2.assign(layoutGraph, {
+        iterations: Math.min(1000, Math.max(300, layoutGraph.order * 8)),
+        settings: {
+          ...inferred,
+          barnesHutOptimize: true,
+          barnesHutTheta: 0.8,
+          adjustSizes: true,
+          scalingRatio: 12,
+          gravity: 0.6,
+          strongGravityMode: false,
+          linLogMode: true,
+          outboundAttractionDistribution: true,
+          edgeWeightInfluence: 0.7,
+          slowDown: 2,
+        },
+      });
+    }
+    const positions: Record<string, { x: number; y: number }> = {};
+    layoutGraph.forEachNode((node, attributes) => {
+      positions[node] = {
+        x: Number(attributes.x) || 0,
+        y: Number(attributes.y) || 0,
+      };
+    });
 
     const cy = cytoscape({
       container: containerRef.current,
@@ -241,14 +305,18 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
         },
       ],
       layout: {
-        name: "breadthfirst",
-        directed: true,
-        spacingFactor: 1.25,
+        name: "preset",
+        positions,
+        fit: true,
         padding: 40,
         animate: false,
       },
       wheelSensitivity: 0.2,
+      autoungrabify: false,
+      autounselectify: false,
     });
+
+    cyRef.current = cy;
 
     cy.ready(() => {
       cy.fit(undefined, 60);
@@ -263,9 +331,10 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
     });
 
     return () => {
+      cyRef.current = null;
       cy.destroy();
     };
-  }, [workspace]);
+  }, [workspace, layoutRun]);
 
   useEffect(() => {
     if (!selected) {
@@ -312,6 +381,24 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
             ))}
           </div>
         )}
+        <div className="graph-toolbar">
+          <span className="graph-layout-badge">ForceAtlas2</span>
+          <button
+            className="button ghost small"
+            onClick={() => cyRef.current?.fit(undefined, 60)}
+          >
+            Вписать
+          </button>
+          <button
+            className="button ghost small"
+            onClick={() => setLayoutRun((value) => value + 1)}
+          >
+            Пересчитать
+          </button>
+        </div>
+        <p className="graph-hint muted">
+          Перетаскивайте узлы мышью · колесо — масштаб
+        </p>
         <div ref={containerRef} className="graph-canvas" />
       </div>
       <aside className="graph-side">

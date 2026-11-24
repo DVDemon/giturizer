@@ -567,6 +567,11 @@ p {
   height: 3px;
   border-radius: 2px;
 }
+.graph-hint {
+  margin: 0;
+  font-size: 12px;
+}
+
 .graph-canvas {
   background: var(--paper);
   border: 1px solid var(--ink);
@@ -1427,4 +1432,38 @@ p {
   .api-table {
     min-width: 680px;
   }
+}
+
+/* --- ForceAtlas2 graph --- */
+.graph-main {
+  position: relative;
+}
+
+.graph-toolbar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 12px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 2px solid #141414;
+  border-radius: 999px;
+}
+
+.graph-layout-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.graph-canvas canvas {
+  cursor: grab;
+}
+
+.graph-canvas canvas:active {
+  cursor: grabbing;
 }
