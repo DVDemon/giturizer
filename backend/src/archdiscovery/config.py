@@ -22,6 +22,7 @@ class Settings(BaseSettings):
 
     gitlab_url: str = "https://gitlab.example.com"
     gitlab_token: str | None = None
+    token_encryption_key: str = "dev-insecure-change-me"
 
     cors_origins: list[str] = ["http://localhost:8080", "http://localhost:5173"]
 

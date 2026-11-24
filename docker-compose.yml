@@ -54,6 +54,7 @@ services:
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-archdiscovery}
       DATA_DIR: ${DATA_DIR:-/data}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-dev-insecure-change-me}
     ports:
       - "${API_PORT:-8000}:8000"
     depends_on:

@@ -10,8 +10,22 @@
 
 ## Статус
 
-Фаза **P0 (Bootstrap)**: каркас репозитория, `docker-compose`, health-check API, заглушка UI,
-CI, Alembic.
+Фаза **P1 (Ядро домена и API)**: проекты и запуски, постановка анализа в очередь Celery,
+stub-пайплайн `queued → running → done`, шифрование GitLab-токена. Перед этим — P0 (каркас,
+`docker-compose`, CI, Alembic).
+
+### API
+
+| Метод | Путь | Назначение |
+|-------|------|------------|
+| GET | `/health` | health-check |
+| POST | `/api/projects` | создать проект (URL GitLab, ветка, токен) |
+| GET | `/api/projects` | список проектов |
+| GET | `/api/projects/{id}` | проект |
+| DELETE | `/api/projects/{id}` | удалить проект (каскадно удаляет запуски) |
+| POST | `/api/projects/{id}/runs` | запустить анализ (`202`, `status=queued`) |
+| GET | `/api/runs/{id}` | статус запуска |
+| GET | `/api/projects/{id}/runs` | запуски проекта |
 
 ## Быстрый старт
 
