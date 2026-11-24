@@ -1,6 +1,12 @@
 import subprocess
+from pathlib import Path
 
-from archdiscovery.vcs.clone import _redact, auth_url, detect_default_branch
+from archdiscovery.vcs.clone import (
+    _redact,
+    auth_url,
+    clone_repository,
+    detect_default_branch,
+)
 from archdiscovery.vcs.provider import detect_provider
 
 
@@ -57,3 +63,23 @@ def test_detect_default_branch_falls_back_to_main(monkeypatch) -> None:
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     assert detect_default_branch("https://github.com/o/r") == "main"
+
+
+def test_clone_includes_submodules(monkeypatch, tmp_path) -> None:
+    calls = []
+
+    def fake_run(arguments, **kwargs):
+        calls.append(arguments)
+        if arguments[1] == "clone":
+            Path(arguments[-1]).mkdir(parents=True, exist_ok=True)
+            return subprocess.CompletedProcess(arguments, 0, stdout="", stderr="")
+        return subprocess.CompletedProcess(arguments, 0, stdout="abcdef\n", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    sha = clone_repository("https://github.com/o/r", "main", None, tmp_path / "repo")
+
+    assert sha == "abcdef"
+    clone_command = calls[0]
+    assert "--recurse-submodules" in clone_command
+    assert "--shallow-submodules" in clone_command

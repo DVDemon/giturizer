@@ -93,13 +93,13 @@ giturizr/
 
 | ID | Задача | Результат |
 |----|--------|-----------|
-| P2.1 | `vcs.clone`: GitHub/GitLab, публичные без токена, авто-определение ветки, shallow, cleanup | Клон репозитория |
+| P2.1 | `vcs.clone`: GitHub/GitLab, submodules (`--recurse-submodules --shallow-submodules`), авто-ветка, shallow, cleanup | Клон репозитория |
 | P2.2 | `tech_detect` по манифестам (pom/gradle/csproj/CMake/requirements/pyproject/package.json) | Реестр стеков |
 | P2.3 | Образ `analyzer` (все инструменты) + Celery-воркер очереди `analyzers`: приём задачи, запуск CLI над клоном, запись JSON, timeout, изоляция ошибок | Контейнер анализатора |
 | P2.4 | Node-адаптер (dependency-cruiser) | Граф модулей |
 | P2.5 | Python-адаптер (pyan + pyreverse) | Call/class графы |
 | P2.6 | C++ адаптер (doxygen + cpp-dependencies) | Include/call графы |
-| P2.7 | ArchGuard-адаптер (Java/Kotlin/C#, TS/JS) | Сервисы/API/DB-карта |
+| P2.7 | ArchGuard scanner (Java/Kotlin/C#/TS/Python/Golang): предзагруженные анализаторы, Java apicalls/datamap, ошибки языков изолированы | Сервисы/API/DB-карта |
 | P2.8 | `orchestrator`: связывание этапов, последовательная постановка задач в очередь `analyzers`, персист результатов, статусы | Пайплайн целиком |
 | P2.9 | Общий volume: клон в `/data/repos/<run_id>`, права, очистка по TTL/ретеншну | Shared storage |
 | P2.10 | Провайдер репозитория (GitHub/GitLab) и авто-ветка (ADR-0015) | Поддержка GitHub |

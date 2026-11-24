@@ -105,7 +105,7 @@ def test_execute_run_persists_results(tmp_path: Path, session: Session) -> None:
     assert deployment.model["compose"]
 
     artifacts = session.scalars(select(RunArtifact).where(RunArtifact.run_id == run.id)).all()
-    assert [artifact.kind for artifact in artifacts] == ["cpp"]
+    assert {artifact.kind for artifact in artifacts} == {"cpp", "archguard"}
 
 
 def test_execute_run_marks_failed_on_clone_error(tmp_path: Path, session: Session) -> None:

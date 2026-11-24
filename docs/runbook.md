@@ -23,8 +23,8 @@
 | `REDIS_URL` | `redis://redis:6379/0` | брокер Celery |
 | `DATA_DIR` | `/data` | клоны и артефакты |
 | `TOKEN_ENCRYPTION_KEY` | dev-значение | ключ шифрования токенов GitHub/GitLab |
-| `CLONE_TIMEOUT` | 600 | таймаут `git clone`, сек |
-| `ANALYZER_TIMEOUT` | 900 | таймаут задачи анализатора, сек |
+| `CLONE_TIMEOUT` | 1200 | таймаут `git clone` (с submodules), сек |
+| `ANALYZER_TIMEOUT` | 3600 | таймаут задачи анализатора (ArchGuard по языкам), сек |
 | `KEEP_REPOS` | `false` | оставлять клон после анализа (для отладки) |
 
 ## 3. Запуск, обновление, миграции
@@ -131,6 +131,8 @@ docker run --rm -v archdiscovery_data:/data -v "$PWD":/backup alpine \
 | `Remote branch ... not found` | ветка не указана/неверна — оставьте пустой (авто) или укажите реальную |
 | `status=failed` + ошибка | `GET /api/runs/{id}` → `error`; логи `worker` |
 | C++-анализатор упал | артефакт `pipeline_warnings` в `/results`; логи `analyzer`; doxygen в образе |
+| ArchGuard по языку упал | блок `errors` в артефакте `archguard`; Java/Python продолжают работать (TS-парсер 2.3.0 падает на части синтаксиса) |
+| Submodules не склонированы | `git clone --recurse-submodules` требует доступ к URL подмодулей; проверьте `.gitmodules` и токен |
 | Neo4j недоступен | запуск завершится `done` с warning `neo4j: ...`; graph-эндпоинты вернут 503 |
 | graph-эндпоинт 503 | `docker compose ps neo4j`, креды `NEO4J_*` |
 | Порт занят | измените `API_PORT`/`WEB_PORT` в `.env` |

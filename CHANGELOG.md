@@ -8,6 +8,12 @@
   токен не обязателен; ветка определяется автоматически (`main`, `master`, …) и запоминается.
   API принимает `repo_url` (старое `gitlab_url` поддерживается как alias), миграция 0005.
 - Сборка образов поддерживает альтернативный PyPI-индекс через build-arg `PIP_INDEX_URL`.
+- **ArchGuard scanner 2.3.0** в контейнере `analyzer` для Java/Kotlin/C#/TypeScript/Python/Golang
+  (Java — `apicalls`/`datamap`); анализаторы предзагружены, ошибка языка не валит пайплайн.
+- Клонирование **git submodules** (`--recurse-submodules --shallow-submodules`);
+  отчёт ArchGuard показывает покрытие `services/<name>`.
+- Fallback-скан JS/TS (файлы и локальные импорты) для модулей, не покрытых ArchGuard;
+  покрытие submodules считается по ArchGuard + fallback.
 
 ### Changed
 

@@ -20,7 +20,10 @@ from archdiscovery.db.models import (
 )
 from archdiscovery.pipeline.annotations_extract import extract_annotation_specs
 from archdiscovery.pipeline.deployment_extract import extract_deployment
-from archdiscovery.pipeline.dispatch import dispatch_cpp_analyzer
+from archdiscovery.pipeline.dispatch import (
+    dispatch_archguard_analyzer,
+    dispatch_cpp_analyzer,
+)
 from archdiscovery.pipeline.graphql_extract import extract_graphql_specs
 from archdiscovery.pipeline.grpc_extract import extract_grpc_specs
 from archdiscovery.pipeline.model import ArchitectureModel, build_model
@@ -37,6 +40,16 @@ from archdiscovery.vcs.clone import clone_repository, detect_default_branch
 CloneFn = Callable[[str, str, str | None, Path], str]
 DispatchFn = Callable[[Path, Path], dict]
 GraphWriter = Callable[[uuid.UUID, ArchitectureModel], None]
+ArchguardDispatchFn = Callable[[Path, Path, list[str]], dict]
+
+ARCHGUARD_LANGUAGES = {
+    "Java": "Java",
+    "Kotlin": "Kotlin",
+    "C#": "CSharp",
+    "JavaScript/TypeScript": "TypeScript",
+    "Python": "Python",
+    "Go": "Golang",
+}
 
 
 def _decrypt_token(project: Project) -> str | None:
@@ -52,6 +65,7 @@ def execute_run(
     data_dir: Path | None = None,
     clone: CloneFn = clone_repository,
     dispatch: DispatchFn = dispatch_cpp_analyzer,
+    archguard_dispatch: ArchguardDispatchFn | None = None,
     graph_writer: GraphWriter | None = write_graph,
     keep_repos: bool | None = None,
 ) -> AnalysisRun | None:
@@ -110,6 +124,28 @@ def execute_run(
                 session.commit()
             except Exception as exc:  # noqa: BLE001 - сбой инструмента не валит пайплайн
                 warnings.append(f"cpp analyzer: {exc}")
+
+        detected_names = {technology.name for technology in technologies}
+        if "Go" in detected_names and not (repo_path / "go.mod").exists():
+            detected_names.discard("Go")
+        archguard_languages = sorted(
+            {ARCHGUARD_LANGUAGES[name] for name in detected_names if name in ARCHGUARD_LANGUAGES}
+        )
+        if archguard_languages:
+            try:
+                dispatcher = archguard_dispatch or dispatch_archguard_analyzer
+                archguard_artifact = dispatcher(repo_path, artifacts_dir, archguard_languages)
+                session.add(
+                    RunArtifact(
+                        run_id=run.id,
+                        kind="archguard",
+                        path=str(artifacts_dir / "archguard.json"),
+                        content=archguard_artifact,
+                    )
+                )
+                session.commit()
+            except Exception as exc:  # noqa: BLE001 - сбой инструмента не валит пайплайн
+                warnings.append(f"archguard: {exc}")
 
         specs = [
             *extract_openapi_specs(repo_path),

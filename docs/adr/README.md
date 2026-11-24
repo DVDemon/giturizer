@@ -23,6 +23,7 @@
 | [0013](0013-clone-retention.md) | Очистка клонов после анализа (`KEEP_REPOS`) | Принято |
 | [0014](0014-container-hardening.md) | Минимальные привилегии контейнеров | Принято |
 | [0015](0015-github-public.md) | Публичные GitHub-репозитории и авто-ветка | Принято |
+| [0016](0016-archguard-scanner.md) | ArchGuard scanner в анализаторе + submodules | Принято |
 
 ## Шаблон записи
 

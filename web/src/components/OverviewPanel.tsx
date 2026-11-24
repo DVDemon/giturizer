@@ -16,6 +16,9 @@ export function OverviewPanel({
       ?.content.warnings ?? [];
 
   const openapi = results?.api_specs.find((spec) => spec.kind === "openapi");
+  const archguard = results?.artifacts.find(
+    (artifact) => artifact.kind === "archguard",
+  )?.content as ArchguardContent | undefined;
 
   return (
     <div className="stack">
@@ -58,6 +61,56 @@ export function OverviewPanel({
           />
           <Metric label="Артефактов" value={results.artifacts.length} />
         </div>
+      )}
+
+      {archguard && (
+        <section className="panel">
+          <h3>ArchGuard</h3>
+          <div className="cards">
+            <Metric label="Классов" value={archguard.summary?.codes ?? 0} />
+            <Metric label="API-контрактов" value={archguard.summary?.apis ?? 0} />
+            <Metric label="Связей с БД" value={archguard.summary?.databases ?? 0} />
+            <Metric
+              label="Submodules"
+              value={`${archguard.summary?.submodules_analyzed ?? 0}/${archguard.summary?.submodules ?? 0}`}
+            />
+            {archguard.fallback && (
+              <Metric
+                label="Fallback (JS/TS)"
+                value={archguard.fallback.files ?? 0}
+              />
+            )}
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Язык</th>
+                <th>Классов</th>
+                <th>API</th>
+                <th>БД</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(archguard.languages ?? {}).map(([language, data]) => (
+                <tr key={language}>
+                  <td>{language}</td>
+                  <td>{data.codes}</td>
+                  <td>{data.apis}</td>
+                  <td>{data.databases}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {(archguard.errors ?? []).length > 0 && (
+            <ul className="list">
+              {(archguard.errors ?? []).map((item) => (
+                <li key={item.language} className="error">
+                  {item.language}: {item.summary ?? item.error.split("\n")[0]}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       )}
 
       {(warnings as string[]).length > 0 && (
@@ -116,7 +169,27 @@ export function OverviewPanel({
   );
 }
 
-function Metric({ label, value }: { label: string; value: number }) {
+interface ArchguardLanguage {
+  codes: number;
+  apis: number;
+  databases: number;
+}
+
+interface ArchguardContent {
+  summary?: {
+    codes?: number;
+    apis?: number;
+    databases?: number;
+    submodules?: number;
+    submodules_analyzed?: number;
+    fallback_files?: number;
+  };
+  fallback?: { files?: number; imports?: number; modules?: Record<string, number> };
+  languages?: Record<string, ArchguardLanguage>;
+  errors?: Array<{ language: string; error: string; summary?: string }>;
+}
+
+function Metric({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="metric">
       <span className="metric-value">{value}</span>

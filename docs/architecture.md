@@ -38,6 +38,7 @@
 | 11 | Связь worker ↔ analyzer | Общая очередь + shared volume (без docker.sock) | Принято |
 | 12 | Доступ к GitLab/GitHub | access token (опционально) | Принято |
 | 13 | Провайдеры | GitHub (public) + GitLab, авто-ветка | Принято |
+| 14 | Анализатор | ArchGuard scanner (Java/Kotlin/C#/TS/Python/Golang) + C++ (doxygen), submodules | Принято |
 
 Полный реестр — в [`docs/adr/README.md`](adr/README.md).
 
@@ -83,7 +84,7 @@ flowchart TB
 | `web` | React + TypeScript (Vite), unprivileged nginx | SPA: ввод URL, список проектов/запусков, визуализация |
 | `api` | Python + FastAPI | REST API, CRUD проектов/запусков, постановка задач, отдача результатов |
 | `worker` | Python + Celery | Оркестрирует пайплайн (клон, детект, merge, persist), ставит задачи анализа в очередь |
-| `analyzer` | Python + Celery + инструменты анализа | Долгоживущий воркер очереди `analyzers`: ArchGuard, doxygen, pyan, dependency-cruiser |
+| `analyzer` | Python + Celery + Java 21 + инструменты анализа | Долгоживущий воркер очереди `analyzers`: ArchGuard scanner, doxygen, pyan, dependency-cruiser |
 | `postgres` | PostgreSQL 16 | Метаданные + снапшоты Structurizr + артефакты |
 | `neo4j` | Neo4j 5 | Граф архитектуры: элементы, связи, транзитивные запросы |
 | `redis` | Redis 7 | Брокер очереди + кэш статусов |
@@ -127,16 +128,19 @@ flowchart LR
 
 1. **Ingest** — принимает URL GitHub/GitLab + параметры (токен, ветка, include/exclude), создаёт
    `Project` и `AnalysisRun(status=queued)`.
-2. **Clone** — worker клонирует репозиторий в общий volume `/data/repos/<run_id>` (shallow, по ветке;
-   если ветка не задана — определяется `git ls-remote --symref ... HEAD`, иначе `main`);
+2. **Clone** — worker клонирует репозиторий в общий volume `/data/repos/<run_id>` (shallow, по ветке,
+   с `--recurse-submodules --shallow-submodules`; если ветка не задана — определяется
+   `git ls-remote --symref ... HEAD`, иначе `main`);
    путь доступен контейнеру `analyzer`.
 3. **Tech detection** — определяет языки и фреймворки по манифестам
    (`pom.xml`, `build.gradle`, `*.csproj`, `CMakeLists.txt`, `requirements.txt`/`pyproject.toml`,
    `package.json`). Формирует первичный реестр технологий.
 4. **Language analysis** — по обнаруженным языкам `worker` последовательно ставит задачи в очередь
    `analyzers`; контейнер `analyzer` выполняет соответствующие инструменты над клоном:
-   - Java / Kotlin / C# / TS/JS → **ArchGuard scanner** (services map, API producers/consumers,
-     database map, зависимости модулей/пакетов/классов/методов).
+   - Java / Kotlin / C# / TS/JS / Python / Go → **ArchGuard scanner** (Java-фичи apicalls/datamap:
+     services map, API, database map; классы и модули). Анализаторы предзагружены в образ,
+     каждый язык запускается независимо: ошибка языка фиксируется и не валит остальные;
+     непокрытые JS/TS-модули добираются fallback-сканом файлов и импортов.
    - C++ → **doxygen** (call/include графы) + **cpp-dependencies** (`#include` в `.dot`).
    - Python → **pyan** (call graph) + **pyreverse** (UML классов/пакетов).
    - Node/TS → **dependency-cruiser** (граф модулей, правила) + **madge** (визуальный граф).

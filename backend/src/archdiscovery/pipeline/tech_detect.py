@@ -338,6 +338,10 @@ def detect_technologies(repo_path: Path) -> list[Technology]:
         add("Java", "language", f"{ext_counts['.java']} files")
     if ext_counts.get(".cs"):
         add("C#", "language", f"{ext_counts['.cs']} files")
+    if ext_counts.get(".kt"):
+        add("Kotlin", "language", f"{ext_counts['.kt']} files")
+    if ext_counts.get(".go"):
+        add("Go", "language", f"{ext_counts['.go']} files")
     js_count = sum(ext_counts.get(ext, 0) for ext in JS_EXTENSIONS)
     if js_count:
         add("JavaScript/TypeScript", "language", f"{js_count} files")

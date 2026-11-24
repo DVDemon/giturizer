@@ -45,3 +45,31 @@ def client(session: Session) -> Iterator[TestClient]:
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+ARCHGUARD_STUB = {
+    "tool": "archguard",
+    "version": "2.3.0",
+    "languages": {"Java": {"codes": 1, "apis": 0, "databases": 0, "modules": {}}},
+    "summary": {
+        "codes": 1,
+        "apis": 0,
+        "databases": 0,
+        "modules": {},
+        "submodules": 0,
+        "submodules_analyzed": 0,
+        "submodule_paths": [],
+    },
+    "apis": [],
+    "databases": [],
+    "errors": [],
+}
+
+
+@pytest.fixture(autouse=True)
+def stub_archguard_dispatch(monkeypatch):
+    """Не ходим в Celery/ArchGuard из юнит-тестов пайплайна."""
+    monkeypatch.setattr(
+        "archdiscovery.services.pipeline.dispatch_archguard_analyzer",
+        lambda *args, **kwargs: ARCHGUARD_STUB,
+    )

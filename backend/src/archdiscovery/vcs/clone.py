@@ -82,6 +82,8 @@ def _clone(
         "--depth",
         "1",
         "--single-branch",
+        "--recurse-submodules",
+        "--shallow-submodules",
         "--branch",
         branch,
         auth_url(url, token),
@@ -102,7 +104,7 @@ def clone_repository(
     branch: str | None,
     token: str | None,
     dest: Path,
-    timeout: int = 600,
+    timeout: int = 1200,
 ) -> str:
     """Shallow-клон ветки в dest; возвращает commit sha.
 
