@@ -1,0 +1,41 @@
+stages:
+  - lint
+  - test
+  - verify
+
+default:
+  image: python:3.12-slim
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install -e "backend[dev]"
+
+lint:
+  stage: lint
+  script:
+    - ruff check backend/src backend/tests
+    - black --check backend/src backend/tests
+    - mypy --config-file backend/pyproject.toml backend/src
+
+test:
+  stage: test
+  script:
+    - pytest backend/tests -q --cov=archdiscovery --cov-report=term-missing
+
+web-build:
+  stage: test
+  image: node:20-alpine
+  before_script: []
+  script:
+    - cd web
+    - npm install --no-audit --no-fund
+    - npm run build
+  artifacts:
+    paths:
+      - web/dist
+
+verify-compose:
+  stage: verify
+  image: docker:27
+  before_script: []
+  script:
+    - docker compose config -q

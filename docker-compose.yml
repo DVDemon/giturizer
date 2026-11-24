@@ -1,0 +1,122 @@
+name: archdiscovery
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-archdiscovery}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-archdiscovery}
+      POSTGRES_DB: ${POSTGRES_DB:-archdiscovery}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  neo4j:
+    image: neo4j:5
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-archdiscovery}
+    volumes:
+      - neo4jdata:/data
+    ports:
+      - "${NEO4J_HTTP_PORT:-7474}:7474"
+      - "${NEO4J_BOLT_PORT:-7687}:7687"
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p \"$${NEO4J_AUTH#*/}\" 'RETURN 1' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.api
+    restart: unless-stopped
+    environment: &backend-env
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://archdiscovery:archdiscovery@postgres:5432/archdiscovery}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      NEO4J_URL: ${NEO4J_URL:-bolt://neo4j:7687}
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-archdiscovery}
+      DATA_DIR: ${DATA_DIR:-/data}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status == 200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    environment: *backend-env
+    volumes:
+      - data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  analyzer:
+    build:
+      context: .
+      dockerfile: analyzer/Dockerfile
+    restart: unless-stopped
+    environment:
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      DATA_DIR: ${DATA_DIR:-/data}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+  neo4jdata:
+  data:

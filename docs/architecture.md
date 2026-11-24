@@ -223,22 +223,20 @@ artifacts(id, run_id, kind, path, content bytea/text)          -- dsl, openapi.y
 Сервисы (см. §4): `web`, `api`, `worker`, `analyzer`, `postgres`, `neo4j`, `redis`.
 
 ```yaml
-# фрагмент docker-compose.yml
+# фрагмент docker-compose.yml (полная версия — в корне репозитория)
 services:
-  postgres:  { image: postgres:16,  volumes: [pgdata:/var/lib/postgresql/data] }
-  neo4j:     { image: neo4j:5,      environment: [NEO4J_AUTH=neo4j/password],
-               volumes: [neo4jdata:/data], ports: ["7474:7474", "7687:7687"] }
+  postgres:  { image: postgres:16, volumes: [pgdata:/var/lib/postgresql/data] }
+  neo4j:     { image: neo4j:5,     environment: [NEO4J_AUTH=neo4j/archdiscovery],
+               volumes: [neo4jdata:/data] }
   redis:     { image: redis:7-alpine }
-  api:       { build: ./api,    depends_on: [postgres, neo4j, redis], ports: ["8000:8000"] }
-  worker:    { build: ./worker, depends_on: [postgres, neo4j, redis],
-               volumes: ["data:/data"] }
-  analyzer:  { build: ./analyzer, depends_on: [redis],
-               volumes: ["data:/data"], environment: [CELERY_QUEUES=analyzers] }
-  web:       { build: ./web,    depends_on: [api],      ports: ["8080:80"] }
-volumes:
-  data: {}
-  pgdata: {}
-  neo4jdata: {}
+  api:       { build: { context: ./backend,  dockerfile: Dockerfile.api },
+               ports: ["${API_PORT:-8000}:8000"] }
+  worker:    { build: { context: ./backend,  dockerfile: Dockerfile.worker },
+               volumes: [data:/data] }
+  analyzer:  { build: { context: .,          dockerfile: analyzer/Dockerfile },
+               volumes: [data:/data] }
+  web:       { build: ./web, ports: ["${WEB_PORT:-8080}:80"] }
+volumes: { data: {}, pgdata: {}, neo4jdata: {} }
 ```
 
 Запуск: `docker compose up -d` → `web` на `:8080`, `api` на `:8000`.
