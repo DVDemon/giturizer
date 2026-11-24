@@ -46,6 +46,10 @@ services:
       context: ./backend
       dockerfile: Dockerfile.api
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment: &backend-env
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://archdiscovery:archdiscovery@postgres:5432/archdiscovery}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
@@ -75,6 +79,10 @@ services:
       context: ./backend
       dockerfile: Dockerfile.worker
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment: *backend-env
     volumes:
       - data:/data
@@ -91,6 +99,10 @@ services:
       context: .
       dockerfile: analyzer/Dockerfile
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       DATA_DIR: ${DATA_DIR:-/data}
@@ -106,13 +118,17 @@ services:
       context: ./web
       dockerfile: Dockerfile
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     ports:
-      - "${WEB_PORT:-8080}:80"
+      - "${WEB_PORT:-8080}:8080"
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10

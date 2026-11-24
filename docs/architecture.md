@@ -76,7 +76,7 @@ flowchart TB
 
 | Контейнер | Технология | Назначение |
 |-----------|------------|------------|
-| `web` | React + TypeScript (Vite) | SPA: ввод URL, список проектов/запусков, визуализация |
+| `web` | React + TypeScript (Vite), unprivileged nginx | SPA: ввод URL, список проектов/запусков, визуализация |
 | `api` | Python + FastAPI | REST API, CRUD проектов/запусков, постановка задач, отдача результатов |
 | `worker` | Python + Celery | Оркестрирует пайплайн (клон, детект, merge, persist), ставит задачи анализа в очередь |
 | `analyzer` | Python + Celery + инструменты анализа | Долгоживущий воркер очереди `analyzers`: ArchGuard, doxygen, pyan, dependency-cruiser |
@@ -235,7 +235,7 @@ services:
                volumes: [data:/data] }
   analyzer:  { build: { context: .,          dockerfile: analyzer/Dockerfile },
                volumes: [data:/data] }
-  web:       { build: ./web, ports: ["${WEB_PORT:-8080}:80"] }
+  web:       { build: ./web, ports: ["${WEB_PORT:-8080}:8080"] }
 volumes: { data: {}, pgdata: {}, neo4jdata: {} }
 ```
 
@@ -247,8 +247,12 @@ volumes: { data: {}, pgdata: {}, neo4jdata: {} }
   валит пайплайн (ошибки уровня инструмента ловятся и помечаются, остальные этапы продолжаются).
 - **Масштаб**: количество проектов/запусков лимитируется очередью Celery; воркеры горизонтально
   масштабируются.
-- **Безопасность**: GitLab-токен хранится зашифрованно (Fernet/KMS), в клонирование передаётся
-  только на время работы; Docker-сокет не используется, анализатор видит только общий volume.
+- **Безопасность**: GitLab-токен хранится зашифрованно (Fernet/KMS), ошибки клонирования
+  редактируются; Docker-сокет не используется; контейнеры `api`/`worker`/`analyzer`/`web` —
+  `no-new-privileges` + `cap_drop: ALL`, nginx unprivileged; наружу публикуются только
+  `api`/`web`/`neo4j` (см. [ADR-0014](adr/0014-container-hardening.md)).
+- **Ретеншн**: клон удаляется после запуска по умолчанию (`KEEP_REPOS=true` — оставить);
+  артефакты хранятся в `/data/artifacts/<run_id>` (см. [ADR-0013](adr/0013-clone-retention.md)).
 - **Границы v1**: монорепо поддерживается (несколько манифестов/языков в одном репо), но
   кросс-репозиторные зависимости и runtime-трафик (APM) не покрываются.
 

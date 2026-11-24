@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "archdiscovery"
-version = "0.1.0"
+version = "1.0.0"
 description = "Architecture discovery service: source code -> Structurizr"
 requires-python = ">=3.11"
 dependencies = [

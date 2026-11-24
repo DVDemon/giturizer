@@ -20,6 +20,8 @@
 | [0010](0010-graph-storage.md) | Хранение графа архитектуры в Neo4j | Принято |
 | [0011](0011-worker-analyzer-interaction.md) | Взаимодействие worker ↔ analyzer: очередь + общий volume | Принято |
 | [0012](0012-gitlab-access.md) | Доступ к GitLab: access token | Принято |
+| [0013](0013-clone-retention.md) | Очистка клонов после анализа (`KEEP_REPOS`) | Принято |
+| [0014](0014-container-hardening.md) | Минимальные привилегии контейнеров | Принято |
 
 ## Шаблон записи
 

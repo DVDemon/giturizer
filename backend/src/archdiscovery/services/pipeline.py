@@ -1,3 +1,4 @@
+import shutil
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -52,6 +53,7 @@ def execute_run(
     clone: CloneFn = clone_repository,
     dispatch: DispatchFn = dispatch_cpp_analyzer,
     graph_writer: GraphWriter | None = write_graph,
+    keep_repos: bool | None = None,
 ) -> AnalysisRun | None:
     """Клон → детект → анализаторы → API/deployment → Structurizr → Neo4j."""
     run = session.get(AnalysisRun, run_id)
@@ -64,6 +66,8 @@ def execute_run(
     run.status = RunStatus.running
     run.started_at = datetime.now(UTC)
     session.commit()
+
+    cleanup_repo = not (settings.keep_repos if keep_repos is None else keep_repos)
 
     base = Path(data_dir or settings.data_dir)
     repo_path = base / "repos" / str(run.id)
@@ -173,5 +177,7 @@ def execute_run(
         run.finished_at = datetime.now(UTC)
         session.commit()
         session.refresh(run)
+        if cleanup_repo:
+            shutil.rmtree(repo_path, ignore_errors=True)
 
     return run

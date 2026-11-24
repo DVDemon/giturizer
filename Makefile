@@ -3,7 +3,7 @@ BACKEND := backend
 SRC := $(BACKEND)/src
 TESTS := $(BACKEND)/tests
 
-.PHONY: help venv test lint fmt typecheck compose-config up down logs build clean
+.PHONY: help venv test lint fmt typecheck compose-config up down logs build clean smoke
 
 help:
 	@echo "make venv          — создать .venv и установить backend[dev]"
@@ -16,6 +16,7 @@ help:
 	@echo "make down          — docker compose down -v"
 	@echo "make logs          — docker compose logs -f"
 	@echo "make build         — собрать образы"
+	@echo "make smoke         — e2e-смоук (нужен PROJECT_ID или GITLAB_URL)"
 
 venv:
 	python3 -m venv .venv
@@ -50,6 +51,9 @@ logs:
 
 build:
 	docker compose build
+
+smoke:
+	bash scripts/smoke.sh
 
 clean:
 	rm -rf .venv .pytest_cache .mypy_cache .ruff_cache backend/*.egg-info

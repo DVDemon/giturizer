@@ -10,13 +10,22 @@
 
 ## Статус
 
-Фаза **P6 (веб-интерфейс)**: SPA на React + TS — проекты и запуски, граф зависимостей
-(Cytoscape.js) с транзитивными зависимостями из Neo4j, C4-диаграмма (Mermaid), просмотр API
-(Redoc для OpenAPI, таблицы для gRPC/GraphQL/аннотаций), реестр технологий, deployment и экспорт
-Structurizr/OpenAPI/CSV.
+**v1.0** — все фазы P0–P7 реализованы: каркас и CI, проекты/запуски, клон и C++-анализатор,
+извлечение API (OpenAPI/gRPC/GraphQL/аннотации) и deployment (compose/Dockerfile/k8s/Helm/ArgoCD/
+GitLab CI) с версиями технологий, Structurizr DSL/JSON + граф в Neo4j, веб-интерфейс.
+Добавлены хардненинг (cap_drop/no-new-privileges, unprivileged nginx, шифрование токенов,
+очистка клонов) и runbook.
 
-Перед этим: P0 (каркас, CI, Alembic), P1 (проекты/запуски), P2 (клон, C++-анализатор),
-P3/P4 (API и deployment), P5 (Structurizr + Neo4j).
+- [Runbook (эксплуатация)](docs/runbook.md)
+- [Архитектура](docs/architecture.md), [ADR](docs/adr/README.md), [планы](docs/plan/README.md)
+
+### Проверка после установки
+
+```bash
+curl -fsS http://localhost:8000/health
+PROJECT_ID=<id> bash scripts/smoke.sh   # или GITLAB_URL=... GITLAB_TOKEN=... bash scripts/smoke.sh
+make smoke
+```
 
 ### Веб-интерфейс
 

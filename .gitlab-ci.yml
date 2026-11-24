@@ -19,7 +19,7 @@ lint:
 test:
   stage: test
   script:
-    - pytest backend/tests -q --cov=archdiscovery --cov-report=term-missing
+    - pytest backend/tests -q --cov=archdiscovery --cov-report=term-missing --cov-fail-under=75
 
 web-build:
   stage: test
@@ -39,3 +39,21 @@ verify-compose:
   before_script: []
   script:
     - docker compose config -q
+
+smoke:
+  stage: verify
+  image: docker:27
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script: []
+  script:
+    - docker compose up -d --build
+    - sleep 25
+    - API_URL=http://localhost:8000 GITLAB_URL="$SMOKE_GITLAB_URL" GITLAB_BRANCH="${SMOKE_GITLAB_BRANCH:-main}" GITLAB_TOKEN="$SMOKE_GITLAB_TOKEN" bash scripts/smoke.sh
+  rules:
+    - if: $SMOKE_GITLAB_URL
+      when: manual
+    - when: never

@@ -1,3 +1,4 @@
+import json
 import shutil
 import uuid
 from pathlib import Path
@@ -164,3 +165,80 @@ def test_results_endpoint(client: TestClient, session: Session, tmp_path: Path) 
     artifact = structurizr.json()
     assert artifact["dsl"].startswith("workspace ")
     assert artifact["workspace"]["name"] == "demo"
+
+
+def test_repo_is_removed_after_run(tmp_path: Path, session: Session) -> None:
+    repo = make_repo(tmp_path)
+    run = make_run(session)
+
+    def fake_clone(url: str, branch: str, token: str | None, dest: Path) -> str:
+        shutil.copytree(repo, dest)
+        return "abc123"
+
+    def fake_dispatch(repo_path: Path, artifacts_dir: Path) -> dict:
+        return {"language": "C++", "stats": {}}
+
+    execute_run(
+        session,
+        run.id,
+        data_dir=tmp_path / "data",
+        clone=fake_clone,
+        dispatch=fake_dispatch,
+        graph_writer=lambda *_: None,
+    )
+
+    assert not (tmp_path / "data" / "repos" / str(run.id)).exists()
+
+
+def test_keep_repos_flag_keeps_clone(tmp_path: Path, session: Session) -> None:
+    repo = make_repo(tmp_path)
+    run = make_run(session)
+
+    def fake_clone(url: str, branch: str, token: str | None, dest: Path) -> str:
+        shutil.copytree(repo, dest)
+        return "abc123"
+
+    execute_run(
+        session,
+        run.id,
+        data_dir=tmp_path / "data",
+        clone=fake_clone,
+        dispatch=lambda *_: {"language": "C++", "stats": {}},
+        graph_writer=lambda *_: None,
+        keep_repos=True,
+    )
+
+    assert (tmp_path / "data" / "repos" / str(run.id)).exists()
+
+
+def test_analyzer_failure_keeps_run_done_with_warning(tmp_path: Path, session: Session) -> None:
+    repo = make_repo(tmp_path)
+    run = make_run(session)
+
+    def fake_clone(url: str, branch: str, token: str | None, dest: Path) -> str:
+        shutil.copytree(repo, dest)
+        return "abc123"
+
+    def failing_dispatch(repo_path: Path, artifacts_dir: Path) -> dict:
+        raise RuntimeError("tool crashed")
+
+    result = execute_run(
+        session,
+        run.id,
+        data_dir=tmp_path / "data",
+        clone=fake_clone,
+        dispatch=failing_dispatch,
+        graph_writer=lambda *_: None,
+    )
+
+    assert result is not None
+    assert result.status == RunStatus.done
+
+    warning = session.scalars(
+        select(RunArtifact).where(
+            RunArtifact.run_id == run.id,
+            RunArtifact.kind == "pipeline_warnings",
+        )
+    ).first()
+    assert warning is not None
+    assert "cpp analyzer" in json.dumps(warning.content)

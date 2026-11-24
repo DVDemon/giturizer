@@ -2,6 +2,8 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from archdiscovery.crypto import DEFAULT_TOKEN_KEY
+
 
 class Settings(BaseSettings):
     """Настройки сервиса, читаются из переменных окружения."""
@@ -22,10 +24,11 @@ class Settings(BaseSettings):
 
     gitlab_url: str = "https://gitlab.example.com"
     gitlab_token: str | None = None
-    token_encryption_key: str = "dev-insecure-change-me"
+    token_encryption_key: str = DEFAULT_TOKEN_KEY
 
     clone_timeout: int = 600
     analyzer_timeout: int = 900
+    keep_repos: bool = False
 
     cors_origins: list[str] = ["http://localhost:8080", "http://localhost:5173"]
 

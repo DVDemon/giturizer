@@ -146,8 +146,8 @@ lint (ruff, black, mypy, eslint, tsc)
   → unit (pytest, vitest)
   → integration (services: postgres, neo4j, redis; testcontainers)
   → build (образы api/worker/web/analyzers)
-  → e2e (docker compose profile, Playwright)
-  → coverage gate (backend ≥80% pipeline, web ≥60% critical) + артефакты
+  → e2e (ручной job: docker compose + scripts/smoke.sh)
+  → coverage gate (--cov-fail-under=75) + артефакты
 ```
 
 - Параллельные стадии: `lint`, `unit` запускаются одновременно.

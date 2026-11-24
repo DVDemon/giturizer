@@ -1,7 +1,13 @@
 import base64
 import hashlib
+import logging
 
 from cryptography.fernet import Fernet
+
+DEFAULT_TOKEN_KEY = "dev-insecure-change-me"
+
+logger = logging.getLogger(__name__)
+_warned_default_key = False
 
 
 def _derive_key(secret: str) -> bytes:
@@ -13,6 +19,12 @@ class TokenCipher:
     """Симметричное шифрование GitLab-токена (Fernet)."""
 
     def __init__(self, secret: str) -> None:
+        global _warned_default_key
+        if secret == DEFAULT_TOKEN_KEY and not _warned_default_key:
+            _warned_default_key = True
+            logger.warning(
+                "TOKEN_ENCRYPTION_KEY is the insecure default; set a strong key in production"
+            )
         self._fernet = Fernet(_derive_key(secret))
 
     def encrypt(self, value: str) -> str:
