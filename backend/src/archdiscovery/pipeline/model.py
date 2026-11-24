@@ -22,6 +22,9 @@ class Relationship:
     destination_id: str
     description: str
     technology: str | None = None
+    transport: str | None = None
+    protocol: str | None = None
+    port: str | None = None
     tags: list[str] = field(default_factory=lambda: ["Relationship"])
 
 
@@ -75,6 +78,37 @@ def _external_kind(image: str) -> str:
     if "swagger" in lowered:
         return "tool"
     return "external"
+
+
+PROTOCOL_BY_IMAGE = [
+    ("postgres", ("PostgreSQL", "TCP", "5432")),
+    ("mongo", ("MongoDB", "TCP", "27017")),
+    ("redis", ("RESP", "TCP", "6379")),
+    ("valkey", ("RESP", "TCP", "6379")),
+    ("nginx", ("HTTP", "TCP", "80")),
+    ("swagger-ui", ("HTTP", "TCP", "80")),
+]
+
+
+def _container_port(service: dict) -> str | None:
+    for entry in service.get("ports", []) or []:
+        text = str(entry)
+        if ":" in text:
+            return text.rsplit(":", 1)[-1].split("/")[0]
+        if text.isdigit():
+            return text
+    return None
+
+
+def _endpoint_protocol(service: dict) -> tuple[str | None, str | None, str | None]:
+    """Возвращает (protocol, transport, port) для связи к сервису."""
+    image = str(service.get("image") or "").lower()
+    image_name = image.rsplit("/", 1)[-1]
+    for marker, (protocol, transport, default_port) in PROTOCOL_BY_IMAGE:
+        if image_name.startswith(marker):
+            return protocol, transport, _container_port(service) or default_port
+    # собираемый сервис без образа: считаем HTTP-микросервисом
+    return "HTTP", "TCP", _container_port(service)
 
 
 def build_model(
@@ -230,7 +264,14 @@ def build_model(
     relation_counter = 0
 
     def add_relationship(
-        source: str, target: str, description: str, technology: str | None
+        source: str,
+        target: str,
+        description: str,
+        technology: str | None,
+        *,
+        transport: str | None = None,
+        protocol: str | None = None,
+        port: str | None = None,
     ) -> None:
         nonlocal relation_counter
         if source == target:
@@ -243,17 +284,32 @@ def build_model(
                 destination_id=target,
                 description=description,
                 technology=technology,
+                transport=transport,
+                protocol=protocol,
+                port=port,
             )
         )
 
+    service_by_slug = {slug(service["name"]): service for service in compose_services}
     for service in compose_services:
         source = service_element.get(slug(service["name"]))
         if source is None:
             continue
         for dependency in service.get("depends_on", []):
             target = service_element.get(slug(dependency))
-            if target is not None:
-                add_relationship(source, target, "depends on", dependency)
+            if target is None:
+                continue
+            target_service = service_by_slug.get(slug(dependency), {})
+            protocol, transport, port = _endpoint_protocol(target_service)
+            add_relationship(
+                source,
+                target,
+                "depends on",
+                None,
+                transport=transport,
+                protocol=protocol,
+                port=port,
+            )
 
     seen_pairs: set[tuple[str, str]] = set()
     if cpp_artifact:
@@ -267,7 +323,7 @@ def build_model(
             if source is None or target is None or (source, target) in seen_pairs:
                 continue
             seen_pairs.add((source, target))
-            add_relationship(source, target, "includes", "C++ include")
+            add_relationship(source, target, "includes", "C++ include", protocol="include")
 
     if built:
         node = DeploymentNode(

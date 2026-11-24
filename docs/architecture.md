@@ -208,6 +208,19 @@ artifacts(id, run_id, kind, path, content bytea/text)          -- dsl, openapi.y
 модуль/пакет → `component`; вызов API → relationship с тегом `API`; обращение к БД → relationship
 с тегом `Database`; `deploymentNodes` из §7. См. [ADR-0009](adr/0009-structurizr-output.md).
 
+Связи несут **протоколы транспортного и прикладного уровня** (`transport`, `protocol`, `port`):
+они определяются по образу/порту целевого сервиса и попадают в Structurizr (`technology` +
+`properties`), Neo4j-рёбра и подписи на графе. Базовые правила:
+
+| Цель | Прикладной | Транспорт | Порт |
+|------|-----------|-----------|------|
+| `postgres[:tag]` | PostgreSQL | TCP | 5432 |
+| `mongo[:tag]` | MongoDB | TCP | 27017 |
+| `redis` / `valkey` | RESP | TCP | 6379 |
+| `nginx` / `swagger-ui` | HTTP | TCP | 80 |
+| собираемый сервис без образа | HTTP | TCP | из `ports` |
+| C++ include-граф | include (compile-time) | — | — |
+
 ## 10. Визуализация (веб)
 
 Свой вьюер ([ADR-0003](adr/0003-frontend-viewer.md)):

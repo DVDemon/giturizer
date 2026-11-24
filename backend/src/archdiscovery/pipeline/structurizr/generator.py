@@ -13,6 +13,20 @@ def _escape(value: str | None) -> str:
     return (value or "").replace("\\", "\\\\").replace('"', '\\"')
 
 
+def _protocol_technology(relationship) -> str | None:
+    if relationship.protocol == "include":
+        return relationship.technology
+    parts: list[str] = []
+    if relationship.protocol:
+        parts.append(relationship.protocol)
+    if relationship.transport:
+        transport = relationship.transport
+        if relationship.port:
+            transport = f"{transport}:{relationship.port}"
+        parts.append(transport)
+    return " · ".join(parts) or None
+
+
 def _analyzed(model: ArchitectureModel) -> list:
     return [
         element
@@ -94,8 +108,18 @@ def generate_json(model: ArchitectureModel) -> dict:
             "destinationId": destination["id"],
             "tags": _tags(relationship.tags),
         }
-        if relationship.technology:
-            item["technology"] = relationship.technology
+        technology = relationship.technology or _protocol_technology(relationship)
+        if technology:
+            item["technology"] = technology
+        properties: dict[str, str] = {}
+        if relationship.transport:
+            properties["transport"] = relationship.transport
+        if relationship.protocol:
+            properties["protocol"] = relationship.protocol
+        if relationship.port:
+            properties["port"] = relationship.port
+        if properties:
+            item["properties"] = properties
         relationships_json.append(item)
 
     deployment_json: list[dict] = []
@@ -244,7 +268,8 @@ def generate_dsl(model: ArchitectureModel) -> str:
             or relationship.destination_id not in element_ids
         ):
             continue
-        technology = f' "{_escape(relationship.technology)}"' if relationship.technology else ""
+        technology_label = relationship.technology or _protocol_technology(relationship)
+        technology = f' "{_escape(technology_label)}"' if technology_label else ""
         lines.append(
             f"        {ident(relationship.source_id)} -> {ident(relationship.destination_id)} "
             f'"{_escape(relationship.description)}"{technology}'

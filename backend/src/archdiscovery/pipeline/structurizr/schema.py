@@ -59,6 +59,7 @@ WORKSPACE_SCHEMA: dict = {
                 "destinationId": {"type": "string"},
                 "tags": {"type": "string"},
                 "technology": {"type": "string"},
+                "properties": {"type": "object"},
             },
         },
         "deploymentNode": {

@@ -100,4 +100,7 @@ export interface Dependency {
   name: string;
   type: string;
   distance: number;
+  protocol?: string | null;
+  transport?: string | null;
+  port?: string | null;
 }

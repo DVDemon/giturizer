@@ -53,7 +53,17 @@ def test_json_is_valid_and_nested() -> None:
 
     system = next(item for item in workspace["model"]["softwareSystems"] if item["name"] == "demo")
     assert [container["name"] for container in system["containers"]] == ["api"]
-    assert workspace["model"]["relationships"]
+    relationships = workspace["model"]["relationships"]
+    assert relationships
+    database_relationship = next(
+        item for item in relationships if item["description"] == "depends on"
+    )
+    assert database_relationship["properties"] == {
+        "transport": "TCP",
+        "protocol": "PostgreSQL",
+        "port": "5432",
+    }
+    assert database_relationship["technology"] == "PostgreSQL · TCP:5432"
     assert workspace["model"]["deploymentNodes"]
 
 
@@ -66,3 +76,4 @@ def test_dsl_contains_elements() -> None:
     assert "->" in dsl
     assert 'deploymentEnvironment "Production"' in dsl
     assert "systemLandscape" in dsl
+    assert "PostgreSQL · TCP:5432" in dsl

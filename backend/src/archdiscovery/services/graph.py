@@ -34,6 +34,9 @@ class Neo4jGraphStore:
                 "target": relationship.destination_id,
                 "description": relationship.description,
                 "technology": relationship.technology or "",
+                "transport": relationship.transport or "",
+                "protocol": relationship.protocol or "",
+                "port": relationship.port or "",
             }
             for relationship in model.relationships
         ]
@@ -55,7 +58,8 @@ class Neo4jGraphStore:
                 "MATCH (a:ArchElement {run_id:$run_id, element_id:r.source}), "
                 "(b:ArchElement {run_id:$run_id, element_id:r.target}) "
                 "MERGE (a)-[rel:RELATES {run_id:$run_id, rel_id:r.id}]->(b) "
-                "SET rel.description=r.description, rel.technology=r.technology",
+                "SET rel.description=r.description, rel.technology=r.technology, "
+                "rel.transport=r.transport, rel.protocol=r.protocol, rel.port=r.port",
                 run_id=run_id,
                 relationships=relationships,
             )
@@ -75,8 +79,13 @@ class Neo4jGraphStore:
         query = (
             "MATCH path=(a:ArchElement {run_id:$run_id, element_id:$element_id})"
             f"-[:RELATES*1..{depth}]->(b) "
+            "WITH b, path, relationships(path) AS rels "
             "RETURN b.element_id AS id, b.name AS name, b.type AS type, "
-            "length(path) AS distance ORDER BY distance, name"
+            "length(path) AS distance, "
+            "rels[size(rels)-1].protocol AS protocol, "
+            "rels[size(rels)-1].transport AS transport, "
+            "rels[size(rels)-1].port AS port "
+            "ORDER BY distance, name"
         )
         with self._driver.session() as session:
             result = session.run(query, run_id=run_id, element_id=element_id)

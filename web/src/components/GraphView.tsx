@@ -1,5 +1,5 @@
 import cytoscape from "cytoscape";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "../api";
 import type { Dependency } from "../types";
@@ -13,11 +13,77 @@ function asArray(value: unknown): any[] {
   return Array.isArray(value) ? value : [];
 }
 
+function protocolColor(protocol: string): string {
+  const value = protocol.toLowerCase();
+  if (value.includes("postgres") || value.includes("mongo") || value.includes("sql")) {
+    return "#00c2ab";
+  }
+  if (value.includes("resp") || value.includes("redis") || value.includes("valkey")) {
+    return "#1e8e4e";
+  }
+  if (value.includes("grpc")) {
+    return "#6432c8";
+  }
+  if (value.includes("graphql")) {
+    return "#ec008c";
+  }
+  if (value.includes("http")) {
+    return "#538efb";
+  }
+  if (value.includes("include")) {
+    return "#8a8f96";
+  }
+  return "#4e535b";
+}
+
+interface EdgeDetails {
+  detail: string;
+  color: string;
+  style: string;
+}
+
+function relationDetails(properties: Record<string, unknown>): EdgeDetails {
+  const protocol = String(properties.protocol ?? "");
+  const transport = String(properties.transport ?? "");
+  const port = String(properties.port ?? "");
+  if (!protocol) {
+    return { detail: "", color: "#d8dce3", style: "solid" };
+  }
+  if (protocol === "include") {
+    return { detail: "include", color: "#8a8f96", style: "dashed" };
+  }
+  const transportLabel = transport ? `${transport}${port ? `:${port}` : ""}` : "";
+  return {
+    detail: [protocol, transportLabel].filter(Boolean).join(" · "),
+    color: protocolColor(protocol),
+    style: "solid",
+  };
+}
+
+interface LegendItem {
+  label: string;
+  color: string;
+}
+
+function collectLegend(workspace: Record<string, unknown>): LegendItem[] {
+  const model = (workspace as { model?: Record<string, unknown> }).model ?? {};
+  const seen = new Map<string, string>();
+  for (const relationship of asArray(model.relationships)) {
+    const properties = (relationship.properties ?? {}) as Record<string, unknown>;
+    const { detail, color } = relationDetails(properties);
+    if (detail && !seen.has(detail)) {
+      seen.set(detail, color);
+    }
+  }
+  return [...seen.entries()].map(([label, color]) => ({ label, color }));
+}
+
 export function GraphView({ runId, workspace }: GraphViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [dependencies, setDependencies] = useState<Dependency[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const legend = useMemo(() => collectLegend(workspace), [workspace]);
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -41,7 +107,9 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
             source: system.id,
             target: container.id,
             label: "",
+            color: "#d8dce3",
           },
+          classes: "parent",
         });
         for (const component of asArray(container.components)) {
           nodes.push({
@@ -57,20 +125,28 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
               source: container.id,
               target: component.id,
               label: "",
+              color: "#d8dce3",
             },
+            classes: "parent",
           });
         }
       }
     }
 
     for (const relationship of asArray(model.relationships)) {
+      const properties = (relationship.properties ?? {}) as Record<string, unknown>;
+      const { detail, color } = relationDetails(properties);
+      const description = String(relationship.description ?? "");
+      const isInclude = String(properties.protocol ?? "") === "include";
       edges.push({
         data: {
           id: `rel-${relationship.id}`,
           source: relationship.sourceId,
           target: relationship.destinationId,
-          label: relationship.description ?? "",
+          label: detail ? `${description}\n${detail}` : description,
+          color,
         },
+        classes: isInclude ? "include" : "network",
       });
     }
 
@@ -132,18 +208,35 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
         {
           selector: "edge",
           style: {
-            width: 1.2,
-            "line-color": "#8a8f96",
-            "target-arrow-color": "#8a8f96",
+            width: 1.4,
+            "line-color": "data(color)",
+            "target-arrow-color": "data(color)",
             "target-arrow-shape": "triangle",
+            "line-style": "solid",
             "curve-style": "bezier",
-            "font-size": 9,
+            "font-size": 10,
             color: "#4e535b",
             "font-family": "Beeline Sans, Golos Text, sans-serif",
             label: "data(label)",
+            "text-wrap": "wrap",
+            "text-max-width": "170px",
             "text-background-color": "#ffffff",
             "text-background-opacity": 0.95,
             "text-background-padding": "2px",
+          },
+        },
+        {
+          selector: "edge.parent",
+          style: {
+            width: 1,
+            "target-arrow-shape": "none",
+            "line-style": "solid",
+          },
+        },
+        {
+          selector: "edge.include",
+          style: {
+            "line-style": "dashed",
           },
         },
       ],
@@ -205,7 +298,22 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
 
   return (
     <div className="graph-layout">
-      <div ref={containerRef} className="graph-canvas" />
+      <div className="graph-main">
+        {legend.length > 0 && (
+          <div className="legend">
+            {legend.map((item) => (
+              <span key={item.label} className="legend-item">
+                <span
+                  className="legend-swatch"
+                  style={{ background: item.color }}
+                />
+                {item.label}
+              </span>
+            ))}
+          </div>
+        )}
+        <div ref={containerRef} className="graph-canvas" />
+      </div>
       <aside className="graph-side">
         <h3>Зависимости</h3>
         {!selected && <p className="muted">Кликните по узлу графа.</p>}
@@ -220,6 +328,14 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
               <li key={dependency.id}>
                 <span className={`dot dot-${dependency.type}`} />
                 {dependency.name}
+                {dependency.protocol ? (
+                  <span className="muted">
+                    {" · "}
+                    {dependency.protocol}
+                    {dependency.transport ? `/${dependency.transport}` : ""}
+                    {dependency.port ? `:${dependency.port}` : ""}
+                  </span>
+                ) : null}
                 <span className="muted"> · шаг {dependency.distance}</span>
               </li>
             ))}

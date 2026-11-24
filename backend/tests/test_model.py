@@ -1,4 +1,4 @@
-from archdiscovery.pipeline.model import build_model
+from archdiscovery.pipeline.model import _endpoint_protocol, build_model
 
 
 def deployment_payload() -> dict:
@@ -64,6 +64,16 @@ def test_builds_c4_model() -> None:
     assert model.deployment_nodes
     assert model.deployment_nodes[0].name == "Docker Compose"
 
+    by_pair = {(item.source_id, item.destination_id): item for item in model.relationships}
+    database_edge = by_pair[("container-api", "external-db")]
+    assert database_edge.protocol == "PostgreSQL"
+    assert database_edge.transport == "TCP"
+    assert database_edge.port == "5432"
+
+    include_edge = by_pair[("container-api", "component-shared-lib")]
+    assert include_edge.protocol == "include"
+    assert include_edge.transport is None
+
 
 def test_falls_back_to_single_container() -> None:
     model = build_model(
@@ -75,3 +85,21 @@ def test_falls_back_to_single_container() -> None:
     )
     containers = [element.id for element in model.elements if element.type == "container"]
     assert containers == ["container-app"]
+
+
+def test_endpoint_protocol_inference() -> None:
+    assert _endpoint_protocol({"image": "valkey/valkey:8.1.1-alpine"}) == (
+        "RESP",
+        "TCP",
+        "6379",
+    )
+    assert _endpoint_protocol({"image": "postgres:14", "ports": ["15432:5432"]}) == (
+        "PostgreSQL",
+        "TCP",
+        "5432",
+    )
+    assert _endpoint_protocol({"build_context": "./a", "ports": ["8080:8080"]}) == (
+        "HTTP",
+        "TCP",
+        "8080",
+    )
