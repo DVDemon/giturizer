@@ -1126,3 +1126,41 @@ p {
   color: #141414;
   margin-top: 10px;
 }
+
+
+/* --- Technologies table --- */
+.tech-toolbar {
+  align-items: center;
+}
+
+.tech-counter {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.sort-button:hover {
+  color: #6432c8;
+}
+
+.sort-arrow {
+  opacity: 0.35;
+  font-size: 11px;
+}
+
+.sort-arrow.active {
+  opacity: 1;
+}
