@@ -624,16 +624,6 @@ p {
   height: auto;
 }
 
-.redoc-wrap {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  overflow: hidden;
-  height: 70vh;
-}
-.redoc-wrap > div {
-  height: 100%;
-}
 
 .grid-2 {
   display: grid;
@@ -1163,4 +1153,278 @@ p {
 
 .sort-arrow.active {
   opacity: 1;
+}
+
+/* --- API catalog --- */
+.api-stats {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+
+.api-toolbar {
+  align-items: center;
+}
+
+.api-counter {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.api-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 16px;
+  align-items: start;
+}
+
+.api-list {
+  min-width: 0;
+}
+
+.api-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.api-table th:nth-child(1) {
+  width: 92px;
+}
+
+.api-table th:nth-child(3) {
+  width: 160px;
+}
+
+.api-table th:nth-child(4) {
+  width: 110px;
+}
+
+.api-table td {
+  vertical-align: top;
+}
+
+.api-row {
+  cursor: pointer;
+}
+
+.api-row:hover td {
+  background: #fff8dc;
+}
+
+.api-row.selected td {
+  background: #fff2b8;
+}
+
+.api-row:focus-visible {
+  outline: 2px solid #6432c8;
+  outline-offset: -2px;
+}
+
+.api-path {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 13px;
+  color: #141414;
+  overflow-wrap: anywhere;
+}
+
+.api-summary {
+  margin-top: 2px;
+  color: #6b6b6b;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-service {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.method {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.method-get {
+  background: #e6f4ea;
+  color: #1e8e4e;
+}
+
+.method-post {
+  background: #e8f0fe;
+  color: #1a56c4;
+}
+
+.method-put {
+  background: #efe7fb;
+  color: #6432c8;
+}
+
+.method-patch {
+  background: #fde8f3;
+  color: #b0176a;
+}
+
+.method-delete {
+  background: #fdecea;
+  color: #d92d20;
+}
+
+.method-rpc {
+  background: #e6faf7;
+  color: #00806f;
+}
+
+.method-graphql {
+  background: #efe7fb;
+  color: #6432c8;
+}
+
+.api-detail {
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding: 16px 18px;
+}
+
+.api-detail-empty {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.api-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.api-detail-path {
+  margin: 6px 0 8px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.api-detail-summary {
+  font-weight: 600;
+}
+
+.api-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  margin: 12px 0;
+}
+
+.api-meta > div {
+  min-width: 0;
+}
+
+.api-meta span {
+  display: block;
+  color: #6b6b6b;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.api-meta strong,
+.api-meta code {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.api-meta-wide {
+  grid-column: 1 / -1;
+}
+
+.api-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.api-section {
+  border-top: 1px solid #ececec;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.api-section h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.api-params {
+  font-size: 12px;
+}
+
+.api-params th,
+.api-params td {
+  padding: 6px 8px;
+}
+
+.api-schema {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid #dddddd;
+  border-radius: 10px;
+}
+
+.api-schema summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.api-schema pre {
+  max-height: 260px;
+  margin: 8px 0 0;
+  padding: 8px;
+  overflow: auto;
+  background: #fafafa;
+  border-radius: 8px;
+  font-size: 11px;
+  white-space: pre-wrap;
+}
+
+.api-fields {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.api-empty {
+  padding: 20px;
+}
+
+@media (max-width: 1100px) {
+  .api-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .api-detail {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .api-list {
+    overflow-x: auto;
+  }
+
+  .api-table {
+    min-width: 680px;
+  }
 }

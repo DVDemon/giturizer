@@ -27,7 +27,7 @@
 |---|---------|----------|--------|
 | 1 | Бэкенд | Python + FastAPI | Принято |
 | 2 | БД | PostgreSQL (метаданные/артефакты) + Neo4j (граф) | Принято |
-| 3 | Веб-визуализация | Свой вьюер (Cytoscape.js + Mermaid + Swagger UI/Redoc) | Принято |
+| 3 | Веб-визуализация | Свой вьюер (Cytoscape.js + Mermaid + API-каталог) | Принято |
 | 4 | Модель выполнения | Асинхронная очередь (Redis + Celery) | Принято |
 | 5 | Анализаторы | Долгоживущий контейнер `analyzer` + очередь задач | Принято |
 | 6 | Источники развёртывания | Dockerfile/compose, k8s, Helm, ArgoCD, GitLab CI | Принято |
@@ -238,7 +238,8 @@ artifacts(id, run_id, kind, path, content bytea/text)          -- dsl, openapi.y
 - **Cytoscape.js** — интерактивный граф зависимостей (компоненты/сервисы), drill-down по узлам,
   фильтры, подсветка транзитивных зависимостей.
 - **Mermaid** — рендер C4-диаграмм (System Context / Container / Component) из модели.
-- **Swagger UI / Redoc** — просмотр извлечённых OpenAPI-спецификаций.
+- **API-каталог** — единый поиск/фильтры по всем операциям (OpenAPI/annotations/gRPC/GraphQL),
+  панель деталей и deep links без конфликта с hash-роутингом.
 - Экспорт/скачивание: `workspace.dsl`, `workspace.json`, `openapi.json`, реестр технологий (JSON/CSV).
 
 ## 11. Развёртывание (docker-compose)

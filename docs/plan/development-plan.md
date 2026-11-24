@@ -56,7 +56,7 @@ giturizr/
         └── components/
             ├── DependencyGraph.tsx   # Cytoscape.js
             ├── C4Diagram.tsx         # Mermaid
-            ├── ApiViewer.tsx         # Swagger UI/Redoc
+            ├── ApiView.tsx           # API-каталог
             ├── TechRegistry.tsx
             └── DeploymentView.tsx
 ```
@@ -155,7 +155,7 @@ giturizr/
 | P6.2 | Статус запуска + поллинг/прогресс | UI |
 | P6.3 | Граф зависимостей (Cytoscape.js): фильтры, drill-down, подсветка транзитивных | UI |
 | P6.4 | C4-диаграммы (Mermaid) | UI |
-| P6.5 | Просмотр API (Swagger UI/Redoc) | UI |
+| P6.5 | API-каталог: поиск/фильтры/пагинация, панель деталей, deep links | UI |
 | P6.6 | Таблица реестра технологий | UI |
 | P6.7 | Просмотр deployment | UI |
 | P6.8 | Экспорт: DSL/JSON/OpenAPI/CSV | UI |

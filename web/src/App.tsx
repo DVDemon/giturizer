@@ -45,22 +45,36 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
+  function navigate(hash: string) {
+    window.location.hash = hash;
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("api") || url.searchParams.has("op")) {
+      url.searchParams.delete("api");
+      url.searchParams.delete("op");
+      window.history.replaceState(
+        null,
+        "",
+        `${url.pathname}${url.search}${url.hash}`,
+      );
+    }
+  }
+
   function openProject(projectId: string) {
     setSelectedProjectId(projectId);
     setPage("scan");
-    window.location.hash = `scan/${encodeURIComponent(projectId)}`;
+    navigate(`scan/${encodeURIComponent(projectId)}`);
   }
 
   function showProjects() {
     setPage("projects");
-    window.location.hash = "projects";
+    navigate("projects");
   }
 
   function showScan() {
     setPage("scan");
-    window.location.hash = selectedProjectId
-      ? `scan/${encodeURIComponent(selectedProjectId)}`
-      : "scan";
+    navigate(
+      selectedProjectId ? `scan/${encodeURIComponent(selectedProjectId)}` : "scan",
+    );
   }
 
   return (

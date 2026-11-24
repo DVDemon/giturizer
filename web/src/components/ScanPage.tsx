@@ -13,6 +13,10 @@ import { TechTable } from "./TechTable";
 
 type Tab = "overview" | "graph" | "c4" | "api" | "tech" | "deployment";
 
+function initialTab(): Tab {
+  return new URLSearchParams(window.location.search).has("op") ? "api" : "overview";
+}
+
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "overview", label: "Обзор" },
   { id: "graph", label: "Граф" },
@@ -37,7 +41,7 @@ export function ScanPage({ projectId, onBack }: Props) {
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [results, setResults] = useState<RunResults | null>(null);
   const [structurizr, setStructurizr] = useState<StructurizrArtifact | null>(null);
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>(() => initialTab());
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [, setTick] = useState(0);
@@ -55,7 +59,7 @@ export function ScanPage({ projectId, onBack }: Props) {
     setActiveRunId(null);
     setResults(null);
     setStructurizr(null);
-    setTab("overview");
+    setTab(initialTab());
     Promise.all([api.project(projectId), api.runs(projectId)])
       .then(([loadedProject, loadedRuns]) => {
         if (cancelled) {
