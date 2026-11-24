@@ -248,12 +248,18 @@ export function ProjectsPage({ onOpenProject }: Props) {
 
       <div className={loading ? "table-wrap loading" : "table-wrap"}>
         <table className="projects-table">
+          <colgroup>
+            <col className="col-project" />
+            <col className="col-url" />
+            <col className="col-date" />
+            <col className="col-actions" />
+          </colgroup>
           <thead>
             <tr>
               <th>Проект</th>
               <th>URL</th>
               <th>Последнее сканирование</th>
-              <th aria-label="Действия" />
+              <th className="actions-head">Действия</th>
             </tr>
           </thead>
           <tbody>
