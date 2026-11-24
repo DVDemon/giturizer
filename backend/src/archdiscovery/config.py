@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     gitlab_token: str | None = None
     token_encryption_key: str = "dev-insecure-change-me"
 
+    clone_timeout: int = 600
+    analyzer_timeout: int = 900
+
     cors_origins: list[str] = ["http://localhost:8080", "http://localhost:5173"]
 
 

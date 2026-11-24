@@ -1,6 +1,5 @@
 import uuid
 from collections.abc import Callable
-from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -61,23 +60,3 @@ class RunService:
             .limit(limit)
         )
         return list(self._session.scalars(stmt))
-
-
-def execute_stub(session: Session, run_id: uuid.UUID) -> AnalysisRun | None:
-    """Заглушка P1: переводит запуск queued → running → done.
-
-    В P2 здесь будет реальный пайплайн анализа.
-    """
-    run = session.get(AnalysisRun, run_id)
-    if run is None:
-        return None
-
-    run.status = RunStatus.running
-    run.started_at = datetime.now(UTC)
-    session.commit()
-
-    run.status = RunStatus.done
-    run.finished_at = datetime.now(UTC)
-    session.commit()
-    session.refresh(run)
-    return run

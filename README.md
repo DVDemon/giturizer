@@ -10,9 +10,11 @@
 
 ## Статус
 
-Фаза **P1 (Ядро домена и API)**: проекты и запуски, постановка анализа в очередь Celery,
-stub-пайплайн `queued → running → done`, шифрование GitLab-токена. Перед этим — P0 (каркас,
-`docker-compose`, CI, Alembic).
+Фаза **P2 (Пайплайн и первый анализатор)**: клонирование GitLab-репозитория, детект технологий,
+C++-анализатор в контейнере `analyzer` (doxygen + include-граф), извлечение OpenAPI и модели
+развёртывания (compose/Dockerfile/k8s/Helm/ArgoCD/GitLab CI). Результаты отдаются через API.
+
+Перед этим: P0 (каркас, compose, CI, Alembic), P1 (проекты/запуски, очередь).
 
 ### API
 
@@ -26,6 +28,15 @@ stub-пайплайн `queued → running → done`, шифрование GitLab
 | POST | `/api/projects/{id}/runs` | запустить анализ (`202`, `status=queued`) |
 | GET | `/api/runs/{id}` | статус запуска |
 | GET | `/api/projects/{id}/runs` | запуски проекта |
+| GET | `/api/runs/{id}/results` | технологии, API, deployment, артефакты анализа |
+
+### Что делает пайплайн
+
+1. `worker` клонирует репозиторий в `/data/repos/<run_id>` (shallow, по ветке).
+2. Определяет технологии по манифестам и файлам.
+3. Ставит C++-анализатор в очередь `analyzers` (контейнер `analyzer`, doxygen + include-граф).
+4. Извлекает OpenAPI-спеки и модель развёртывания (compose, Dockerfile, k8s, Helm, ArgoCD, GitLab CI).
+5. Сохраняет всё в PostgreSQL; `GET /api/runs/{id}/results` отдаёт результат.
 
 ## Быстрый старт
 

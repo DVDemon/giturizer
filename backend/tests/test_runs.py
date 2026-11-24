@@ -1,9 +1,11 @@
+import shutil
 import uuid
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from archdiscovery.services.runs import execute_stub
+from archdiscovery.services.pipeline import execute_run
 
 
 def create_project(client: TestClient) -> str:
@@ -13,6 +15,14 @@ def create_project(client: TestClient) -> str:
     )
     assert response.status_code == 201
     return response.json()["id"]
+
+
+def make_repo(path: Path) -> Path:
+    repo = path / "repo"
+    repo.mkdir()
+    (repo / "CMakeLists.txt").write_text("cmake_minimum_required(VERSION 3.12)\n", encoding="utf-8")
+    (repo / "main.cpp").write_text("int main() { return 0; }\n", encoding="utf-8")
+    return repo
 
 
 def test_create_run_queued(client: TestClient) -> None:
@@ -29,11 +39,27 @@ def test_create_run_queued(client: TestClient) -> None:
     assert body["finished_at"] is None
 
 
-def test_run_completed_by_stub(client: TestClient, session: Session) -> None:
+def test_run_completed_by_pipeline(client: TestClient, session: Session, tmp_path: Path) -> None:
     project_id = create_project(client)
     run = client.post(f"/api/projects/{project_id}/runs", json={}).json()
+    repo = make_repo(tmp_path)
 
-    execute_stub(session, uuid.UUID(run["id"]))
+    def fake_clone(url: str, branch: str, token: str | None, dest: Path) -> str:
+        shutil.copytree(repo, dest)
+        return "deadbeef"
+
+    def fake_dispatch(repo_path: Path, artifacts_dir: Path) -> dict:
+        return {"language": "C++", "files": [], "stats": {"files": 1}}
+
+    result = execute_run(
+        session,
+        uuid.UUID(run["id"]),
+        data_dir=tmp_path / "data",
+        clone=fake_clone,
+        dispatch=fake_dispatch,
+    )
+    assert result is not None
+    assert result.status.value == "done"
 
     fetched = client.get(f"/api/runs/{run['id']}")
     assert fetched.status_code == 200

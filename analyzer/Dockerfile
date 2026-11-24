@@ -6,8 +6,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# P0: стаб — только пакет приложения.
-# P2: здесь будут установлены инструменты анализа (ArchGuard, doxygen, pyan, dependency-cruiser).
+# P2: инструменты анализа. Дальше — pyan/pyreverse (Python), dependency-cruiser/madge (Node).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends doxygen ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY backend/pyproject.toml ./
 COPY backend/src ./src
 RUN pip install .

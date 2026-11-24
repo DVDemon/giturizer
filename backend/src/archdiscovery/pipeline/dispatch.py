@@ -1,0 +1,21 @@
+import json
+from pathlib import Path
+
+from archdiscovery.config import settings
+from archdiscovery.queue.celery_app import celery_app
+
+
+def dispatch_cpp_analyzer(repo_path: Path, artifacts_dir: Path, timeout: int | None = None) -> dict:
+    """Ставит задачу анализа C++ в очередь analyzers и ждёт результат."""
+    output = artifacts_dir / "cpp.json"
+    async_result = celery_app.send_task(
+        "analyzer.cpp",
+        args=[str(repo_path), str(output)],
+        queue="analyzers",
+    )
+    # Пайплайн намеренно ждёт анализатор последовательно; Celery по умолчанию
+    # запрещает блокирующий get() внутри задачи — снимаем этот запрет явно.
+    async_result.get(timeout=timeout or settings.analyzer_timeout, disable_sync_subtasks=False)
+    if not output.exists():
+        raise RuntimeError("C++ analyzer produced no output")
+    return json.loads(output.read_text(encoding="utf-8"))
