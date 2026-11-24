@@ -33,7 +33,10 @@ export default function App() {
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [results, setResults] = useState<RunResults | null>(null);
   const [structurizr, setStructurizr] = useState<StructurizrArtifact | null>(null);
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>(() => {
+    const hash = window.location.hash.replace("#", "");
+    return TABS.some((item) => item.id === hash) ? (hash as Tab) : "overview";
+  });
   const [error, setError] = useState<string | null>(null);
   const [health, setHealth] = useState("…");
   const [busy, setBusy] = useState(false);
@@ -92,6 +95,22 @@ export default function App() {
     };
   }, [selectedProjectId]);
 
+  useEffect(() => {
+    const target = tab === "overview" ? window.location.pathname : `#${tab}`;
+    window.history.replaceState(null, "", target);
+  }, [tab]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const hash = window.location.hash.replace("#", "");
+      if (TABS.some((item) => item.id === hash)) {
+        setTab(hash as Tab);
+      }
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
   const activeRunStatus = activeRun?.status;
   const activeRunIdValue = activeRun?.id;
 
@@ -102,19 +121,18 @@ export default function App() {
       return;
     }
     let cancelled = false;
-    Promise.all([api.results(activeRunIdValue), api.structurizr(activeRunIdValue)])
-      .then(([runResults, artifact]) => {
-        if (cancelled) {
-          return;
-        }
-        setResults(runResults);
-        setStructurizr(artifact);
-      })
-      .catch((cause) => {
-        if (!cancelled) {
-          setError(message(cause));
-        }
-      });
+    Promise.allSettled([
+      api.results(activeRunIdValue),
+      api.structurizr(activeRunIdValue),
+    ]).then(([resultsResult, structurizrResult]) => {
+      if (cancelled) {
+        return;
+      }
+      setResults(resultsResult.status === "fulfilled" ? resultsResult.value : null);
+      setStructurizr(
+        structurizrResult.status === "fulfilled" ? structurizrResult.value : null,
+      );
+    });
     return () => {
       cancelled = true;
     };
@@ -177,11 +195,16 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div>
-          <h1>ArchDiscovery</h1>
-          <p className="subtitle">
-            Архитектура из исходного кода · Structurizr + Neo4j
-          </p>
+        <div className="brand">
+          <span className="brand-mark" aria-hidden="true">
+            A
+          </span>
+          <div>
+            <h1>ArchDiscovery</h1>
+            <p className="subtitle">
+              Архитектура из исходного кода · Structurizr + Neo4j
+            </p>
+          </div>
         </div>
         <span className={`health ${health === "ok" ? "ok" : "bad"}`}>
           API: {health}
@@ -252,14 +275,21 @@ export default function App() {
                   results={results}
                   runId={activeRun.id}
                 />
-              ) : !results || !structurizr ? (
-                <p className="muted">Загружаем результаты…</p>
-              ) : tab === "graph" ? (
+              ) : !results ? (
+                <p className="muted">
+                  Для этого запуска нет результатов — запустите анализ заново.
+                </p>
+              ) : (tab === "graph" || tab === "c4") && !structurizr ? (
+                <p className="muted">
+                  Для этого запуска нет Structurizr-снапшота — запустите анализ
+                  заново.
+                </p>
+              ) : tab === "graph" && structurizr ? (
                 <GraphView
                   runId={activeRun.id}
                   workspace={structurizr.workspace}
                 />
-              ) : tab === "c4" ? (
+              ) : tab === "c4" && structurizr ? (
                 <C4View workspace={structurizr.workspace} />
               ) : tab === "api" ? (
                 <ApiView specs={results.api_specs} />

@@ -156,7 +156,7 @@ def build_model(
         containers.append(
             Element(
                 id="container-app",
-                name=project_name,
+                name="Application",
                 type="container",
                 description="Application",
                 technology=default_technology,

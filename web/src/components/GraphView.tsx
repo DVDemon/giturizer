@@ -81,14 +81,17 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
         {
           selector: 'node[kind="system"]',
           style: {
-            "background-color": "#facc15",
-            color: "#0f172a",
+            "background-color": "#ffc800",
+            "border-color": "#000000",
+            "border-width": 2,
+            color: "#141414",
             label: "data(label)",
-            "font-size": 12,
-            "font-weight": 600,
+            "font-size": 13,
+            "font-weight": 500,
+            "font-family": "Beeline Sans, Golos Text, sans-serif",
             shape: "round-rectangle",
-            width: 120,
-            height: 42,
+            width: 150,
+            height: 50,
             "text-valign": "center",
             "text-halign": "center",
           },
@@ -96,26 +99,33 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
         {
           selector: 'node[kind="container"]',
           style: {
-            "background-color": "#38bdf8",
-            color: "#0f172a",
+            "background-color": "#538efb",
+            "border-color": "#0d63b3",
+            "border-width": 1,
+            color: "#ffffff",
             label: "data(label)",
-            "font-size": 11,
+            "font-size": 12,
+            "font-weight": 500,
+            "font-family": "Beeline Sans, Golos Text, sans-serif",
             shape: "round-rectangle",
-            width: 110,
-            height: 36,
+            width: 132,
+            height: 42,
             "text-valign": "center",
           },
         },
         {
           selector: 'node[kind="component"]',
           style: {
-            "background-color": "#a78bfa",
-            color: "#0f172a",
+            "background-color": "#6432c8",
+            "border-color": "#45326f",
+            "border-width": 1,
+            color: "#ffffff",
             label: "data(label)",
-            "font-size": 10,
+            "font-size": 11,
+            "font-family": "Beeline Sans, Golos Text, sans-serif",
             shape: "ellipse",
-            width: 80,
-            height: 34,
+            width: 100,
+            height: 38,
             "text-valign": "center",
           },
         },
@@ -123,21 +133,36 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
           selector: "edge",
           style: {
             width: 1.2,
-            "line-color": "#64748b",
-            "target-arrow-color": "#64748b",
+            "line-color": "#8a8f96",
+            "target-arrow-color": "#8a8f96",
             "target-arrow-shape": "triangle",
             "curve-style": "bezier",
             "font-size": 9,
-            color: "#94a3b8",
+            color: "#4e535b",
+            "font-family": "Beeline Sans, Golos Text, sans-serif",
             label: "data(label)",
-            "text-background-color": "#0f172a",
-            "text-background-opacity": 0.8,
+            "text-background-color": "#ffffff",
+            "text-background-opacity": 0.95,
             "text-background-padding": "2px",
           },
         },
       ],
-      layout: { name: "cose", animate: false, padding: 40 },
+      layout: {
+        name: "breadthfirst",
+        directed: true,
+        spacingFactor: 1.25,
+        padding: 40,
+        animate: false,
+      },
       wheelSensitivity: 0.2,
+    });
+
+    cy.ready(() => {
+      cy.fit(undefined, 60);
+      if (cy.zoom() > 1.4) {
+        cy.zoom(1.4);
+        cy.center();
+      }
     });
 
     cy.on("tap", "node", (event) => {

@@ -17,7 +17,10 @@ GitLab CI) с версиями технологий, Structurizr DSL/JSON + гр
 очистка клонов) и runbook.
 
 - [Runbook (эксплуатация)](docs/runbook.md)
+- [Дизайн-система (Beeline brandbook)](docs/design-system.md)
 - [Архитектура](docs/architecture.md), [ADR](docs/adr/README.md), [планы](docs/plan/README.md)
+
+![Веб-интерфейс в дизайн-системе Beeline](docs/assets/ui-screenshot.png)
 
 ### Проверка после установки
 
