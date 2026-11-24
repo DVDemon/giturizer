@@ -21,6 +21,12 @@
 - Fallback-скан JS/TS (файлы и локальные импорты) для модулей, не покрытых ArchGuard;
   покрытие submodules считается по ArchGuard + fallback.
 
+### Fixed
+
+- UI больше не показывает Java-стек TypeScript-парсера ArchGuard как ошибку:
+  ограничение отображается жёлтым предупреждением, технические детали свёрнуты;
+  fallback-покрытие JS/TS видно отдельной строкой.
+
 ### Changed
 
 - `GET /api/projects` теперь возвращает конверт `{items,total,page,per_page}`

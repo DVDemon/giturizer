@@ -163,7 +163,7 @@ def analyze_archguard(
                     {
                         "language": language,
                         "summary": summary[:300],
-                        "error": message[-2000:],
+                        "error": message[:4000],
                     }
                 )
                 continue

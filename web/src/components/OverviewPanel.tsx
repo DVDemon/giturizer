@@ -101,15 +101,30 @@ export function OverviewPanel({
               ))}
             </tbody>
           </table>
-          {(archguard.errors ?? []).length > 0 && (
-            <ul className="list">
-              {(archguard.errors ?? []).map((item) => (
-                <li key={item.language} className="error">
-                  {item.language}: {item.summary ?? item.error.split("\n")[0]}
-                </li>
-              ))}
-            </ul>
+          {archguard.fallback && (
+            <p className="muted">
+              Fallback JS/TS: {archguard.fallback.files ?? 0} файлов,{" "}
+              {archguard.fallback.imports ?? 0} локальных импортов в{" "}
+              {Object.keys(archguard.fallback.modules ?? {}).length} модулях.
+            </p>
           )}
+          {(archguard.errors ?? []).map((item) => {
+            const fallbackCovered =
+              item.language === "TypeScript" && Boolean(archguard.fallback?.files);
+            return (
+              <div key={item.language} className="alert warning">
+                <span>
+                  {fallbackCovered
+                    ? `TypeScript: ArchGuard 2.3.0 не разобрал часть файлов; модули покрыты fallback-сканом (${archguard.fallback?.files ?? 0} файлов).`
+                    : `${item.language}: ${item.summary ?? "анализатор завершился с ошибкой"}`}
+                </span>
+                <details>
+                  <summary>Технические детали</summary>
+                  <pre>{item.error}</pre>
+                </details>
+              </div>
+            );
+          })}
         </section>
       )}
 
