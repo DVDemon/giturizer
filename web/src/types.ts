@@ -3,8 +3,9 @@ export type RunStatus = "queued" | "running" | "done" | "failed";
 export interface Project {
   id: string;
   name: string;
-  gitlab_url: string;
-  default_branch: string;
+  repo_url: string;
+  provider: "github" | "gitlab" | "other";
+  default_branch: string | null;
   created_at: string;
 }
 

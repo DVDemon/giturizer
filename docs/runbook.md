@@ -22,7 +22,7 @@
 | `NEO4J_URL` | `bolt://neo4j:7687` | Bolt-эндпоинт |
 | `REDIS_URL` | `redis://redis:6379/0` | брокер Celery |
 | `DATA_DIR` | `/data` | клоны и артефакты |
-| `TOKEN_ENCRYPTION_KEY` | dev-значение | ключ шифрования GitLab-токенов |
+| `TOKEN_ENCRYPTION_KEY` | dev-значение | ключ шифрования токенов GitHub/GitLab |
 | `CLONE_TIMEOUT` | 600 | таймаут `git clone`, сек |
 | `ANALYZER_TIMEOUT` | 900 | таймаут задачи анализатора, сек |
 | `KEEP_REPOS` | `false` | оставлять клон после анализа (для отладки) |
@@ -46,6 +46,12 @@ docker compose exec api alembic upgrade head
 ```
 
 Остановка: `make down` (с удалением volume — `docker compose down -v`, осторожно: удаляет БД).
+
+Если PyPI недоступен в вашей сети, сборка поддерживает альтернативный индекс:
+
+```bash
+docker compose build --build-arg PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+```
 
 ## 4. Проверки
 
@@ -106,7 +112,7 @@ docker run --rm -v archdiscovery_data:/data -v "$PWD":/backup alpine \
 
 ## 8. Безопасность
 
-- GitLab-токен хранится **зашифрованным** (Fernet). Ключ — `TOKEN_ENCRYPTION_KEY`;
+- Токены GitHub/GitLab хранятся **зашифрованными** (Fernet). Ключ — `TOKEN_ENCRYPTION_KEY`;
   при дефолтном ключе сервис пишет предупреждение в лог. Смена ключа делает старые токены
   нечитаемыми — пересоздайте проекты.
 - Ошибки `git clone` **редактируются**: токен заменяется на `***`.
@@ -121,8 +127,8 @@ docker run --rm -v archdiscovery_data:/data -v "$PWD":/backup alpine \
 
 | Симптом | Что проверить |
 |---------|----------------|
-| `clone` 401/403 | токен жив и имеет `read_repository`; поле `token` при создании проекта |
-| `Remote branch ... not found` | укажите реальную ветку в `default_branch` |
+| `clone` 401/403 | токен жив и имеет доступ (`read_repository`/`Contents: read`); для публичных GitHub/GitLab токен не нужен |
+| `Remote branch ... not found` | ветка не указана/неверна — оставьте пустой (авто) или укажите реальную |
 | `status=failed` + ошибка | `GET /api/runs/{id}` → `error`; логи `worker` |
 | C++-анализатор упал | артефакт `pipeline_warnings` в `/results`; логи `analyzer`; doxygen в образе |
 | Neo4j недоступен | запуск завершится `done` с warning `neo4j: ...`; graph-эндпоинты вернут 503 |

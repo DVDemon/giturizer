@@ -9,7 +9,7 @@ from archdiscovery.db import models
 def payload(**overrides):
     data = {
         "name": "demo",
-        "gitlab_url": "https://gitlab.example.com/group/demo",
+        "repo_url": "https://gitlab.example.com/group/demo",
         "default_branch": "main",
         "token": "secret-token",
     }
@@ -22,7 +22,8 @@ def test_create_project(client: TestClient) -> None:
     assert response.status_code == 201
     body = response.json()
     assert body["name"] == "demo"
-    assert body["gitlab_url"] == "https://gitlab.example.com/group/demo"
+    assert body["repo_url"] == "https://gitlab.example.com/group/demo"
+    assert body["provider"] == "gitlab"
     assert "token" not in body
     assert body["id"]
 
@@ -31,8 +32,8 @@ def test_token_is_encrypted(client: TestClient, session: Session) -> None:
     body = client.post("/api/projects", json=payload()).json()
     project = session.get(models.Project, uuid.UUID(body["id"]))
     assert project is not None
-    assert project.gitlab_token_encrypted
-    assert project.gitlab_token_encrypted != "secret-token"
+    assert project.token_encrypted
+    assert project.token_encrypted != "secret-token"
 
 
 def test_list_and_get_project(client: TestClient) -> None:
@@ -56,3 +57,34 @@ def test_delete_project(client: TestClient) -> None:
 def test_get_missing_project_returns_404(client: TestClient) -> None:
     response = client.get(f"/api/projects/{uuid.uuid4()}")
     assert response.status_code == 404
+
+
+def test_github_public_project_without_token(client: TestClient) -> None:
+    response = client.post(
+        "/api/projects",
+        json={
+            "name": "public-github",
+            "repo_url": "https://github.com/owner/public-repo",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["provider"] == "github"
+    assert body["default_branch"] is None
+    assert "token" not in body
+
+
+def test_legacy_gitlab_url_field_is_accepted(client: TestClient) -> None:
+    response = client.post(
+        "/api/projects",
+        json={
+            "name": "legacy",
+            "gitlab_url": "https://gitlab.com/group/legacy",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["repo_url"] == "https://gitlab.com/group/legacy"
+    assert body["provider"] == "gitlab"

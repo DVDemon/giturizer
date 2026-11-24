@@ -1,6 +1,6 @@
 # ArchDiscovery
 
-Сервис анализа архитектуры: по URL GitLab-проекта выгружает код, восстанавливает архитектуру
+Сервис анализа архитектуры: по URL репозитория GitHub или GitLab выгружает код, восстанавливает архитектуру
 (связи, API, технологии, deployment) и отдаёт результат в формате Structurizr (DSL + JSON).
 
 - Архитектура: [docs/architecture.md](docs/architecture.md)
@@ -49,7 +49,7 @@ make smoke
 | Метод | Путь | Назначение |
 |-------|------|------------|
 | GET | `/health` | health-check |
-| POST | `/api/projects` | создать проект (URL GitLab, ветка, токен) |
+| POST | `/api/projects` | создать проект (`repo_url` GitHub/GitLab, ветка опционально, токен опционально) |
 | GET | `/api/projects` | список проектов |
 | GET | `/api/projects/{id}` | проект |
 | DELETE | `/api/projects/{id}` | удалить проект (каскадно удаляет запуски) |
@@ -62,6 +62,9 @@ make smoke
 | GET | `/api/runs/{id}/structurizr.json` | скачать `workspace.json` |
 | GET | `/api/runs/{id}/graph/elements` | элементы графа из Neo4j |
 | GET | `/api/runs/{id}/graph/dependencies?element_id=&depth=` | транзитивные зависимости (Cypher) |
+
+Публичные репозитории GitHub/GitLab клонируются без токена; ветка необязательна —
+если не указана, сервис определяет её по умолчанию (`main`, `master`, …) и запоминает в проекте.
 
 ### Что делает пайплайн
 

@@ -11,7 +11,7 @@ from archdiscovery.services.pipeline import execute_run
 def create_project(client: TestClient) -> str:
     response = client.post(
         "/api/projects",
-        json={"name": "demo", "gitlab_url": "https://gitlab.example.com/group/demo"},
+        json={"name": "demo", "repo_url": "https://gitlab.example.com/group/demo"},
     )
     assert response.status_code == 201
     return response.json()["id"]

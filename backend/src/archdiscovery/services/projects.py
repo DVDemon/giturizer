@@ -7,6 +7,7 @@ from archdiscovery.crypto import TokenCipher
 from archdiscovery.db.models import Project
 from archdiscovery.schemas.project import ProjectCreate
 from archdiscovery.services.errors import NotFoundError
+from archdiscovery.vcs.provider import detect_provider
 
 
 class ProjectService:
@@ -15,11 +16,13 @@ class ProjectService:
         self._cipher = cipher
 
     def create(self, payload: ProjectCreate) -> Project:
+        repo_url = str(payload.repo_url)
         project = Project(
             name=payload.name,
-            gitlab_url=str(payload.gitlab_url),
-            default_branch=payload.default_branch,
-            gitlab_token_encrypted=(self._cipher.encrypt(payload.token) if payload.token else None),
+            repo_url=repo_url,
+            provider=detect_provider(repo_url),
+            default_branch=payload.default_branch or None,
+            token_encrypted=(self._cipher.encrypt(payload.token) if payload.token else None),
         )
         self._session.add(project)
         self._session.commit()

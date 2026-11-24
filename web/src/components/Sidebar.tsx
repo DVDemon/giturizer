@@ -32,7 +32,7 @@ export function Sidebar({
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
-  const [branch, setBranch] = useState("main");
+  const [branch, setBranch] = useState("");
   const [token, setToken] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -45,8 +45,8 @@ export function Sidebar({
     try {
       await onCreateProject({
         name: name.trim(),
-        gitlab_url: url.trim(),
-        default_branch: branch.trim() || "main",
+        repo_url: url.trim(),
+        default_branch: branch.trim() || undefined,
         token: token.trim() || undefined,
       });
       setName("");
@@ -80,23 +80,26 @@ export function Sidebar({
           />
           <input
             className="input"
-            placeholder="https://gitlab.com/group/project"
+            placeholder="https://github.com/owner/repo или GitLab"
             value={url}
             onChange={(event) => setUrl(event.target.value)}
           />
           <input
             className="input"
-            placeholder="Ветка (main)"
+            placeholder="Ветка (авто, если пусто)"
             value={branch}
             onChange={(event) => setBranch(event.target.value)}
           />
           <input
             className="input"
-            placeholder="Access token (опционально)"
+            placeholder="Токен (только для приватных)"
             type="password"
             value={token}
             onChange={(event) => setToken(event.target.value)}
           />
+          <p className="muted">
+            Публичные репозитории GitHub и GitLab клонируются без токена.
+          </p>
           <button className="button" disabled={submitting}>
             {submitting ? "Создаём…" : "Создать проект"}
           </button>
@@ -115,7 +118,9 @@ export function Sidebar({
               onClick={() => onSelectProject(project.id)}
             >
               <span>{project.name}</span>
-              <small>{project.default_branch}</small>
+              <small>
+                {project.provider} · {project.default_branch ?? "авто"}
+              </small>
             </button>
             <button
               className="icon-button"

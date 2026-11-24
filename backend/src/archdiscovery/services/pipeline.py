@@ -18,7 +18,6 @@ from archdiscovery.db.models import (
     RunStatus,
     TechRegistry,
 )
-from archdiscovery.gitlab.clone import clone_repository
 from archdiscovery.pipeline.annotations_extract import extract_annotation_specs
 from archdiscovery.pipeline.deployment_extract import extract_deployment
 from archdiscovery.pipeline.dispatch import dispatch_cpp_analyzer
@@ -33,6 +32,7 @@ from archdiscovery.pipeline.structurizr import (
 )
 from archdiscovery.pipeline.tech_detect import detect_technologies
 from archdiscovery.services.graph import write_graph
+from archdiscovery.vcs.clone import clone_repository, detect_default_branch
 
 CloneFn = Callable[[str, str, str | None, Path], str]
 DispatchFn = Callable[[Path, Path], dict]
@@ -40,9 +40,9 @@ GraphWriter = Callable[[uuid.UUID, ArchitectureModel], None]
 
 
 def _decrypt_token(project: Project) -> str | None:
-    if not project.gitlab_token_encrypted:
+    if not project.token_encrypted:
         return None
-    return TokenCipher(settings.token_encryption_key).decrypt(project.gitlab_token_encrypted)
+    return TokenCipher(settings.token_encryption_key).decrypt(project.token_encrypted)
 
 
 def execute_run(
@@ -77,7 +77,11 @@ def execute_run(
 
     try:
         token = _decrypt_token(project)
-        run.commit_sha = clone(project.gitlab_url, project.default_branch, token, repo_path)
+        branch = project.default_branch or detect_default_branch(project.repo_url, token)
+        if project.default_branch is None:
+            project.default_branch = branch
+            session.commit()
+        run.commit_sha = clone(project.repo_url, branch, token, repo_path)
         session.commit()
 
         technologies = detect_technologies(repo_path)

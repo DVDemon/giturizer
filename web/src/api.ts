@@ -32,7 +32,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export interface CreateProjectPayload {
   name: string;
-  gitlab_url: string;
+  repo_url: string;
   default_branch?: string;
   token?: string;
 }

@@ -16,8 +16,8 @@ from archdiscovery.db.models import (
     RunStatus,
     TechRegistry,
 )
-from archdiscovery.gitlab.clone import CloneError
 from archdiscovery.services.pipeline import execute_run
+from archdiscovery.vcs.clone import CloneError
 
 
 def make_repo(tmp_path: Path) -> Path:
@@ -51,7 +51,8 @@ def make_repo(tmp_path: Path) -> Path:
 def make_run(session: Session) -> AnalysisRun:
     project = Project(
         name="demo",
-        gitlab_url="https://gitlab.example.com/group/demo",
+        repo_url="https://gitlab.example.com/group/demo",
+        provider="gitlab",
         default_branch="main",
     )
     session.add(project)
@@ -124,7 +125,7 @@ def test_execute_run_marks_failed_on_clone_error(tmp_path: Path, session: Sessio
 def test_results_endpoint(client: TestClient, session: Session, tmp_path: Path) -> None:
     project = client.post(
         "/api/projects",
-        json={"name": "demo", "gitlab_url": "https://gitlab.example.com/group/demo"},
+        json={"name": "demo", "repo_url": "https://gitlab.example.com/group/demo"},
     ).json()
     run = client.post(f"/api/projects/{project['id']}/runs", json={}).json()
 
@@ -242,3 +243,47 @@ def test_analyzer_failure_keeps_run_done_with_warning(tmp_path: Path, session: S
     ).first()
     assert warning is not None
     assert "cpp analyzer" in json.dumps(warning.content)
+
+
+def test_pipeline_detects_default_branch(tmp_path: Path, session: Session, monkeypatch) -> None:
+    repo = make_repo(tmp_path)
+    project = Project(
+        name="github-demo",
+        repo_url="https://github.com/owner/repo",
+        provider="github",
+        default_branch=None,
+    )
+    session.add(project)
+    session.commit()
+    session.refresh(project)
+    run = AnalysisRun(project_id=project.id)
+    session.add(run)
+    session.commit()
+    session.refresh(run)
+
+    calls: list[str | None] = []
+
+    def fake_detect(url: str, token: str | None) -> str:
+        return "master"
+
+    def fake_clone(url: str, branch: str | None, token: str | None, dest: Path) -> str:
+        calls.append(branch)
+        shutil.copytree(repo, dest)
+        return "abc123"
+
+    monkeypatch.setattr("archdiscovery.services.pipeline.detect_default_branch", fake_detect)
+
+    result = execute_run(
+        session,
+        run.id,
+        data_dir=tmp_path / "data",
+        clone=fake_clone,
+        dispatch=lambda *_: {"language": "C++", "stats": {}},
+        graph_writer=lambda *_: None,
+    )
+
+    assert result is not None
+    assert result.status == RunStatus.done
+    assert calls == ["master"]
+    session.refresh(project)
+    assert project.default_branch == "master"

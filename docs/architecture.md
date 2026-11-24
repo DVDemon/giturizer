@@ -2,14 +2,16 @@
 
 Рабочее название: **ArchDiscovery**.
 
-Сервис принимает на вход URL GitLab-проекта, выгружает и анализирует его исходный код,
+Сервис принимает на вход URL репозитория GitHub или GitLab (публичного или с токеном),
+выгружает и анализирует его исходный код,
 и восстанавливает архитектуру: связи между компонентами/сервисами, API, технологии и библиотеки,
 а также модель развёртывания. Канонический результат — рабочее пространство в формате **Structurizr**
 (DSL + JSON), плюс спецификации API и реестр технологий.
 
 ## 1. Цель и назначение
 
-- Принять URL репозитория GitLab (HTTP(S), поддержка токена доступа).
+- Принять URL репозитория **GitHub** или **GitLab** (HTTP(S)); публичные — без токена,
+  приватные — с access token. Ветка может быть указана или определена автоматически.
 - Выполнить полный цикл статического анализа кода.
 - Построить архитектурную модель (C4-ориентированную): системы/сервисы, контейнеры, компоненты,
   зависимости, вызовы API, обращения к БД.
@@ -34,7 +36,8 @@
 | 9 | Формат Structurizr | DSL + JSON (оба) | Принято |
 | 10 | Хранение графа | Neo4j | Принято |
 | 11 | Связь worker ↔ analyzer | Общая очередь + shared volume (без docker.sock) | Принято |
-| 12 | Доступ к GitLab | access token | Принято |
+| 12 | Доступ к GitLab/GitHub | access token (опционально) | Принято |
+| 13 | Провайдеры | GitHub (public) + GitLab, авто-ветка | Принято |
 
 Полный реестр — в [`docs/adr/README.md`](adr/README.md).
 
@@ -43,14 +46,15 @@
 ```mermaid
 flowchart LR
     U[Пользователь / архитектор] --> W[ArchDiscovery]
-    W --> G[GitLab (источник кода)]
+    W --> G[GitHub / GitLab (источник кода)]
     W --> R[Реестры Docker-образов]
     W --> D[PostgreSQL + Neo4j + Redis]
     W --> A[Анализаторы: ArchGuard, doxygen, pyan, dependency-cruiser, ...]
 ```
 
 - **Пользователь** — архитектор/разработчик, вводит URL проекта, просматривает результаты.
-- **GitLab** — источник исходного кода (клонирование по HTTP(S) + токен или SSH).
+- **GitHub / GitLab** — источник исходного кода. Публичные репозитории клонируются
+  анонимно, приватные — по access token; провайдер определяется по URL.
 - **Реестры образов** — необязательно: определения образов из Dockerfile/k8s/Helm.
 - **PostgreSQL + Neo4j + Redis** — метаданные/артефакты, граф архитектуры и очередь задач.
 
@@ -70,7 +74,7 @@ flowchart TB
         WK --> N4J
         WK -->|clone| VOL[(volume data: repos / artifacts)]
         AN -->|read/write| VOL
-        WK --> GIT[GitLab clone]
+        WK --> GIT[GitHub/GitLab clone]
     end
 ```
 
@@ -121,9 +125,10 @@ flowchart LR
 
 ### 5.1 Пайплайн анализа (этапы)
 
-1. **Ingest** — принимает GitLab URL + параметры (токен, ветка, include/exclude), создаёт
+1. **Ingest** — принимает URL GitHub/GitLab + параметры (токен, ветка, include/exclude), создаёт
    `Project` и `AnalysisRun(status=queued)`.
-2. **Clone** — worker клонирует репозиторий в общий volume `/data/repos/<run_id>` (shallow, по ветке);
+2. **Clone** — worker клонирует репозиторий в общий volume `/data/repos/<run_id>` (shallow, по ветке;
+   если ветка не задана — определяется `git ls-remote --symref ... HEAD`, иначе `main`);
    путь доступен контейнеру `analyzer`.
 3. **Tech detection** — определяет языки и фреймворки по манифестам
    (`pom.xml`, `build.gradle`, `*.csproj`, `CMakeLists.txt`, `requirements.txt`/`pyproject.toml`,
@@ -179,7 +184,7 @@ flowchart LR
 ## 8. Модель данных (PostgreSQL + Neo4j)
 
 ```text
-projects(id, name, gitlab_url, default_branch, gitlab_token_encrypted, created_at)
+projects(id, name, repo_url, provider, default_branch, token_encrypted, created_at)
 analysis_runs(id, project_id, status, commit_sha, config jsonb, error text,
               started_at, finished_at)
 architecture_snapshots(id, project_id, run_id, structurizr_dsl text,
@@ -260,7 +265,7 @@ volumes: { data: {}, pgdata: {}, neo4jdata: {} }
   валит пайплайн (ошибки уровня инструмента ловятся и помечаются, остальные этапы продолжаются).
 - **Масштаб**: количество проектов/запусков лимитируется очередью Celery; воркеры горизонтально
   масштабируются.
-- **Безопасность**: GitLab-токен хранится зашифрованно (Fernet/KMS), ошибки клонирования
+- **Безопасность**: access token (GitLab/GitHub) хранится зашифрованно (Fernet/KMS), ошибки клонирования
   редактируются; Docker-сокет не используется; контейнеры `api`/`worker`/`analyzer`/`web` —
   `no-new-privileges` + `cap_drop: ALL`, nginx unprivileged; наружу публикуются только
   `api`/`web`/`neo4j` (см. [ADR-0014](adr/0014-container-hardening.md)).
@@ -280,4 +285,4 @@ volumes: { data: {}, pgdata: {}, neo4jdata: {} }
 - Поддержка монорепо с несколькими deployables и маппинг «код ↔ сервис» требует уточнения.
 - Граф архитектуры хранится в Neo4j (см. [ADR-0010](adr/0010-graph-storage.md)); двойная запись
   PostgreSQL/Neo4j и её согласованность — зона особого внимания при реализации Persist.
-- Мультиарендность и GitLab OAuth — отложены до v2 ([ADR-0008](adr/0008-auth.md)).
+- Мультиарендность и GitLab/GitHub OAuth — отложены до v2 ([ADR-0008](adr/0008-auth.md)).
