@@ -2,6 +2,8 @@ import { RedocStandalone } from "redoc";
 import { useState } from "react";
 
 import type { ApiSpec } from "../types";
+import { ErrorBoundary } from "./ErrorBoundary";
+import { OpenApiTable } from "./OpenApiTable";
 
 function asArray(value: unknown): any[] {
   return Array.isArray(value) ? value : [];
@@ -29,19 +31,48 @@ export function ApiView({ specs }: { specs: ApiSpec[] }) {
         ))}
       </div>
       {spec.kind === "openapi" ? (
-        <div className="redoc-wrap">
-          <RedocStandalone
-            spec={spec.spec}
-            options={{
-              hideDownloadButton: true,
-              disableSearch: true,
-              nativeScrollbars: true,
-              theme: { colors: { primary: { main: "#facc15" } } },
-            }}
-          />
-        </div>
+        <OpenApiView spec={spec.spec} />
       ) : (
         <SpecTable spec={spec} />
+      )}
+    </div>
+  );
+}
+
+function OpenApiView({ spec }: { spec: Record<string, unknown> }) {
+  const [mode, setMode] = useState<"redoc" | "table">("redoc");
+  return (
+    <div>
+      <div className="toolbar">
+        <button
+          className={mode === "redoc" ? "chip active" : "chip"}
+          onClick={() => setMode("redoc")}
+        >
+          Redoc
+        </button>
+        <button
+          className={mode === "table" ? "chip active" : "chip"}
+          onClick={() => setMode("table")}
+        >
+          Таблица
+        </button>
+      </div>
+      {mode === "table" ? (
+        <OpenApiTable spec={spec} />
+      ) : (
+        <div className="redoc-wrap">
+          <ErrorBoundary fallback={<OpenApiTable spec={spec} />}>
+            <RedocStandalone
+              spec={spec}
+              options={{
+                hideDownloadButton: true,
+                disableSearch: true,
+                nativeScrollbars: true,
+                theme: { colors: { primary: { main: "#facc15" } } },
+              }}
+            />
+          </ErrorBoundary>
+        </div>
       )}
     </div>
   );
