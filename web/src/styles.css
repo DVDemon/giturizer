@@ -799,15 +799,15 @@ p {
 }
 
 .col-url {
-  width: 34%;
+  width: auto;
 }
 
 .col-date {
-  width: 20%;
+  width: 190px;
 }
 
 .col-actions {
-  width: 18%;
+  width: 128px;
 }
 
 .projects-table th,
@@ -830,7 +830,8 @@ p {
   border-bottom: none;
 }
 
-.projects-table td:nth-child(3) {
+.projects-table td:nth-child(3),
+.projects-table th:nth-child(3) {
   white-space: nowrap;
 }
 
