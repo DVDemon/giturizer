@@ -1,7 +1,7 @@
 import cytoscape from "cytoscape";
 import { MultiGraph } from "graphology";
 import forceAtlas2 from "graphology-layout-forceatlas2";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { api } from "../api";
 import type { Dependency } from "../types";
@@ -62,22 +62,25 @@ function relationDetails(properties: Record<string, unknown>): EdgeDetails {
   };
 }
 
-interface LegendItem {
-  label: string;
-  color: string;
+function nodeSize(kind: string): number {
+  return kind === "system" ? 60 : kind === "container" ? 45 : 30;
 }
 
-function collectLegend(workspace: Record<string, unknown>): LegendItem[] {
-  const model = (workspace as { model?: Record<string, unknown> }).model ?? {};
-  const seen = new Map<string, string>();
-  for (const relationship of asArray(model.relationships)) {
-    const properties = (relationship.properties ?? {}) as Record<string, unknown>;
-    const { detail, color } = relationDetails(properties);
-    if (detail && !seen.has(detail)) {
-      seen.set(detail, color);
-    }
-  }
-  return [...seen.entries()].map(([label, color]) => ({ label, color }));
+function forceSettings(order: number) {
+  const inferred = forceAtlas2.inferSettings(order);
+  return {
+    ...inferred,
+    barnesHutOptimize: true,
+    barnesHutTheta: 0.8,
+    adjustSizes: true,
+    scalingRatio: 12,
+    gravity: 0.6,
+    strongGravityMode: false,
+    linLogMode: true,
+    outboundAttractionDistribution: true,
+    edgeWeightInfluence: 0.7,
+    slowDown: 2,
+  };
 }
 
 export function GraphView({ runId, workspace }: GraphViewProps) {
@@ -87,7 +90,6 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
   const [dependencies, setDependencies] = useState<Dependency[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [layoutRun, setLayoutRun] = useState(0);
-  const legend = useMemo(() => collectLegend(workspace), [workspace]);
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -174,7 +176,7 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
       layoutGraph.addNode(String(node.data.id), {
         x: Math.cos(angle) * radius,
         y: Math.sin(angle) * radius,
-        size: kind === "system" ? 60 : kind === "container" ? 45 : 30,
+        size: nodeSize(kind),
       });
     });
     for (const edge of edges) {
@@ -188,22 +190,10 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
       });
     }
     if (layoutGraph.order > 1) {
-      const inferred = forceAtlas2.inferSettings(layoutGraph.order);
       forceAtlas2.assign(layoutGraph, {
         iterations: Math.min(1000, Math.max(300, layoutGraph.order * 8)),
-        settings: {
-          ...inferred,
-          barnesHutOptimize: true,
-          barnesHutTheta: 0.8,
-          adjustSizes: true,
-          scalingRatio: 12,
-          gravity: 0.6,
-          strongGravityMode: false,
-          linLogMode: true,
-          outboundAttractionDistribution: true,
-          edgeWeightInfluence: 0.7,
-          slowDown: 2,
-        },
+        settings: forceSettings(layoutGraph.order),
+
       });
     }
     const positions: Record<string, { x: number; y: number }> = {};
@@ -318,6 +308,64 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
 
     cyRef.current = cy;
 
+    const relayoutAround = (nodeId: string) => {
+      const root = cy.getElementById(nodeId);
+      if (root.empty()) {
+        return;
+      }
+      const neighbourhood = root
+        .closedNeighborhood()
+        .nodes()
+        .union(root.neighborhood().nodes().neighborhood().nodes());
+      const graph = new MultiGraph();
+      neighbourhood.forEach((node) => {
+        const position = node.position();
+        graph.addNode(node.id(), {
+          x: position.x,
+          y: position.y,
+          size: nodeSize(String(node.data("kind") ?? "")),
+          fixed: node.id() === nodeId,
+        });
+      });
+      if (graph.order < 2) {
+        return;
+      }
+      cy.edges().forEach((edge) => {
+        const source = edge.source().id();
+        const target = edge.target().id();
+        if (graph.hasNode(source) && graph.hasNode(target)) {
+          graph.addEdgeWithKey(edge.id(), source, target, {
+            weight: edge.hasClass("parent") ? 0.7 : 1,
+          });
+        }
+      });
+      forceAtlas2.assign(graph, {
+        iterations: 120,
+        settings: forceSettings(graph.order),
+      });
+      graph.forEachNode((node, attributes) => {
+        if (node === nodeId) {
+          return;
+        }
+        const target = cy.getElementById(node);
+        if (!target.empty()) {
+          target.animate(
+            {
+              position: {
+                x: Number(attributes.x) || 0,
+                y: Number(attributes.y) || 0,
+              },
+            },
+            { duration: 300 },
+          );
+        }
+      });
+    };
+
+    cy.on("dragfree", "node", (event) => {
+      relayoutAround(String(event.target.id()));
+    });
+
     cy.ready(() => {
       cy.fit(undefined, 60);
       if (cy.zoom() > 1.4) {
@@ -368,19 +416,6 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
   return (
     <div className="graph-layout">
       <div className="graph-main">
-        {legend.length > 0 && (
-          <div className="legend">
-            {legend.map((item) => (
-              <span key={item.label} className="legend-item">
-                <span
-                  className="legend-swatch"
-                  style={{ background: item.color }}
-                />
-                {item.label}
-              </span>
-            ))}
-          </div>
-        )}
         <div className="graph-toolbar">
           <span className="graph-layout-badge">ForceAtlas2</span>
           <button
@@ -397,7 +432,7 @@ export function GraphView({ runId, workspace }: GraphViewProps) {
           </button>
         </div>
         <p className="graph-hint muted">
-          Перетаскивайте узлы мышью · колесо — масштаб
+          Перетаскивайте узлы: связанные пересчитываются после отпускания · колесо — масштаб
         </p>
         <div ref={containerRef} className="graph-canvas" />
       </div>

@@ -550,23 +550,6 @@ p {
   gap: 8px;
   min-width: 0;
 }
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  font-size: 0.76rem;
-  color: var(--muted);
-}
-.legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.legend-swatch {
-  width: 16px;
-  height: 3px;
-  border-radius: 2px;
-}
 .graph-hint {
   margin: 0;
   font-size: 12px;
