@@ -27,7 +27,7 @@
 
 - [ADR-0012](../adr/0012-gitlab-access.md) — access token;
 - [ADR-0010](../adr/0010-graph-storage.md) — Neo4j;
-- [ADR-0011](../adr/0011-runner-docker-access.md) — `/var/run/docker.sock`;
+- [ADR-0011](../adr/0011-worker-analyzer-interaction.md) — очередь + общий volume (без docker.sock);
 - [ADR-0009](../adr/0009-structurizr-output.md) — оба формата (DSL + JSON).
 
 Плановых блокеров нет — можно стартовать **P0**.

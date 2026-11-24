@@ -12,13 +12,13 @@
 | [0002](0002-database.md) | PostgreSQL (метаданные) + Neo4j (граф) | Принято |
 | [0003](0003-frontend-viewer.md) | Собственный веб-вьюер (Cytoscape.js + Mermaid + Swagger UI) | Принято |
 | [0004](0004-execution-model.md) | Асинхронное выполнение через Redis + Celery | Принято |
-| [0005](0005-analyzer-runners.md) | Отдельный Docker-образ на каждый анализатор | Принято |
+| [0005](0005-analyzer-runners.md) | Анализаторы в долгоживущем контейнере `analyzer` + очередь | Принято |
 | [0006](0006-deployment-sources.md) | Источники развёртывания: Dockerfile/compose, k8s, Helm, ArgoCD, GitLab CI | Принято |
 | [0007](0007-api-sources.md) | Источники API: OpenAPI, gRPC/protobuf, GraphQL, аннотации фреймворков | Принято |
 | [0008](0008-auth.md) | Одиночный пользователь / внутренний режим | Принято |
 | [0009](0009-structurizr-output.md) | Вывод в Structurizr: DSL + JSON workspace (оба формата) | Принято |
 | [0010](0010-graph-storage.md) | Хранение графа архитектуры в Neo4j | Принято |
-| [0011](0011-runner-docker-access.md) | Доступ раннера к Docker: `/var/run/docker.sock` | Принято |
+| [0011](0011-worker-analyzer-interaction.md) | Взаимодействие worker ↔ analyzer: очередь + общий volume | Принято |
 | [0012](0012-gitlab-access.md) | Доступ к GitLab: access token | Принято |
 
 ## Шаблон записи

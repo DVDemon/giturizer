@@ -45,11 +45,8 @@ giturizr/
 │           ├── merge.py
 │           ├── structurizr/{dsl,json}.py
 │           └── persist.py
-├── analyzers/                   # отдельный Docker-образ на инструмент
-│   ├── archguard/Dockerfile
-│   ├── cpp/Dockerfile
-│   ├── python/Dockerfile
-│   └── node/Dockerfile
+├── analyzer/                    # один долгоживущий образ со всеми инструментами
+│   └── Dockerfile
 └── web/                         # React + TS (Vite)
     ├── Dockerfile
     ├── package.json
@@ -74,7 +71,7 @@ giturizr/
 |----|--------|-----------|
 | P0.1 | Каркас репозитория: `backend/`, `analyzers/`, `web/`, `docs/`, `Makefile` | Структура каталогов |
 | P0.2 | `backend/pyproject.toml`: ruff, black, mypy, pytest(+cov), celery, sqlalchemy, alembic | Конфиг линтера/тестов |
-| P0.3 | `docker-compose.yml`: `postgres`, `neo4j`, `redis`, стабы `api`/`web` | `docker compose up` поднимается |
+| P0.3 | `docker-compose.yml`: `postgres`, `neo4j`, `redis`, общий volume `data`, стабы `api`/`worker`/`analyzer`/`web` | `docker compose up` поднимается |
 | P0.4 | CI (`.gitlab-ci.yml`): lint → test | Зелёный пайплайн |
 | P0.5 | Alembic init + первая пустая миграция | Готовность к моделям |
 
@@ -98,12 +95,13 @@ giturizr/
 |----|--------|-----------|
 | P2.1 | `gitlab.clone` (токен/SSH по ADR-0012), shallow, cleanup | Клон репозитория |
 | P2.2 | `tech_detect` по манифестам (pom/gradle/csproj/CMake/requirements/pyproject/package.json) | Реестр стеков |
-| P2.3 | `analyzers.base` + Docker-раннер: spawn контейнера, timeout, capture stdout/JSON, изоляция ошибок | Абстракция раннера |
+| P2.3 | Образ `analyzer` (все инструменты) + Celery-воркер очереди `analyzers`: приём задачи, запуск CLI над клоном, запись JSON, timeout, изоляция ошибок | Контейнер анализатора |
 | P2.4 | Node-адаптер (dependency-cruiser) — **первый вертикальный срез** | Граф модулей |
 | P2.5 | Python-адаптер (pyan + pyreverse) | Call/class графы |
 | P2.6 | C++ адаптер (doxygen + cpp-dependencies) | Include/call графы |
 | P2.7 | ArchGuard-адаптер (Java/Kotlin/C#, TS/JS) | Сервисы/API/DB-карта |
-| P2.8 | `orchestrator`: связывание этапов, персист промежуточных результатов, статусы | Пайплайн целиком |
+| P2.8 | `orchestrator`: связывание этапов, последовательная постановка задач в очередь `analyzers`, персист результатов, статусы | Пайплайн целиком |
+| P2.9 | Общий volume: клон в `/data/repos/<run_id>`, права, очистка по TTL/ретеншну | Shared storage |
 
 **DoD P2**: на фикстурных репозиториях каждый анализатор даёт нормализованные данные в БД; сбой одного не валит остальные. М2.
 
@@ -166,7 +164,7 @@ giturizr/
 | ID | Задача | Результат |
 |----|--------|-----------|
 | P7.1 | Производительность на крупных репо; кэш клонирования | Ускорение |
-| P7.2 | Безопасность: шифрование токена, отсутствие секретов в логах/артефактах, изоляция docker-доступа (ADR-0011) | Security review |
+| P7.2 | Безопасность: шифрование токена, отсутствие секретов в логах/артефактах, изоляция shared volume и прав на каталоги | Security review |
 | P7.3 | E2E-прогон + chaos: timeout/сбой анализатора | E2E-набор |
 | P7.4 | Документация: README, runbook, руководство пользователя | Docs |
 | P7.5 | Ревью и актуализация ADR (все решения приняты; фиксировать отклонения) | Реестр |
@@ -194,6 +192,7 @@ giturizr/
 | ArchGuard меняет формат вывода | средняя | высокое | пиннинг версии, адаптер + golden-тесты |
 | Helm-шаблоны сложно рендерить | высокая | среднее | подмножество (`helm template` в контейнере) |
 | C++ даёт мало сервисной информации | высокая | среднее | честно помечать как «include/call-граф» |
-| Доступ к `docker.sock` в CI (ADR-0011) | средняя | высокое | внутренний режим, non-root анализаторы, `network: none`; fallback на локальный прогон |
+| `analyzer` — единая точка отказа / «шумный сосед» | средняя | среднее | рестарт воркера, Celery retry, лимиты CPU/RAM, изоляция по каталогу `<run_id>` |
+| Рост общего volume `data` (клоны/артефакты) | средняя | среднее | TTL/ретеншн, очистка после run, лимит размера |
 | Рассинхрон двойной записи Postgres/Neo4j | средняя | высокое | идемпотентный `MERGE`, ре-импорт из JSONB-слепка, тест согласованности |
 | Долгие анализы больших репо | средняя | среднее | таймауты, лимиты, прогресс-статусы |

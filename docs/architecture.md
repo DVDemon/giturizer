@@ -27,13 +27,13 @@
 | 2 | БД | PostgreSQL (метаданные/артефакты) + Neo4j (граф) | Принято |
 | 3 | Веб-визуализация | Свой вьюер (Cytoscape.js + Mermaid + Swagger UI/Redoc) | Принято |
 | 4 | Модель выполнения | Асинхронная очередь (Redis + Celery) | Принято |
-| 5 | Запуск анализаторов | Отдельный Docker-образ на инструмент | Принято |
+| 5 | Анализаторы | Долгоживущий контейнер `analyzer` + очередь задач | Принято |
 | 6 | Источники развёртывания | Dockerfile/compose, k8s, Helm, ArgoCD, GitLab CI | Принято |
 | 7 | Источники API | OpenAPI, gRPC/protobuf, GraphQL, аннотации фреймворков | Принято |
 | 8 | Аутентификация | Одиночный пользователь / внутренний | Принято |
 | 9 | Формат Structurizr | DSL + JSON (оба) | Принято |
 | 10 | Хранение графа | Neo4j | Принято |
-| 11 | Доступ раннера к Docker | `/var/run/docker.sock` | Принято |
+| 11 | Связь worker ↔ analyzer | Общая очередь + shared volume (без docker.sock) | Принято |
 | 12 | Доступ к GitLab | access token | Принято |
 
 Полный реестр — в [`docs/adr/README.md`](adr/README.md).
@@ -64,10 +64,12 @@ flowchart TB
         API --> N4J[(neo4j)]
         API --> RD[(redis)]
         API -->|задача| RD
-        RD --> WK[worker — Celery]
+        RD --> WK[worker — Celery, очередь pipeline]
+        RD --> AN[analyzer — Celery, очередь analyzers]
         WK --> PG
         WK --> N4J
-        WK -->|spawn контейнеры| RUN[анализаторы: per-tool Docker-образы]
+        WK -->|clone| VOL[(volume data: repos / artifacts)]
+        AN -->|read/write| VOL
         WK --> GIT[GitLab clone]
     end
 ```
@@ -76,16 +78,18 @@ flowchart TB
 |-----------|------------|------------|
 | `web` | React + TypeScript (Vite) | SPA: ввод URL, список проектов/запусков, визуализация |
 | `api` | Python + FastAPI | REST API, CRUD проектов/запусков, постановка задач, отдача результатов |
-| `worker` | Python + Celery | Выполняет пайплайн анализа, управляет запуском контейнеров анализаторов |
+| `worker` | Python + Celery | Оркестрирует пайплайн (клон, детект, merge, persist), ставит задачи анализа в очередь |
+| `analyzer` | Python + Celery + инструменты анализа | Долгоживущий воркер очереди `analyzers`: ArchGuard, doxygen, pyan, dependency-cruiser |
 | `postgres` | PostgreSQL 16 | Метаданные + снапшоты Structurizr + артефакты |
 | `neo4j` | Neo4j 5 | Граф архитектуры: элементы, связи, транзитивные запросы |
 | `redis` | Redis 7 | Брокер очереди + кэш статусов |
 
-> Примечание: анализаторы запускаются через **хостовый Docker-демон** — `worker` монтирует
-> `/var/run/docker.sock` (см. [ADR-0011](adr/0011-runner-docker-access.md)); отдельный DinD-сервис
-> не используется.
+> Примечание: анализаторы работают в долгоживущем контейнере `analyzer` и вызываются через очередь
+> (`analyzers`). Клон репозитория и результаты передаются через общий volume `/data/repos` и
+> `/data/artifacts`; Docker-сокет не используется (см. [ADR-0005](adr/0005-analyzer-runners.md),
+> [ADR-0011](adr/0011-worker-analyzer-interaction.md)).
 
-## 5. Компоненты бэкенда (C4: Components, контур `api` + `worker`)
+## 5. Компоненты бэкенда (C4: Components, контур `api` + `worker` + `analyzer`)
 
 ```mermaid
 flowchart LR
@@ -98,32 +102,42 @@ flowchart LR
     subgraph worker
         W1[Pipeline Orchestrator]
         W2[TechDetector]
-        W3[AnalyzerRunner]
+        W3[AnalyzerDispatcher]
         W4[ApiExtractor]
         W5[DeploymentExtractor]
         W6[ModelMerger]
         W7[StructurizrGenerator]
         W8[Persister]
     end
+    subgraph analyzer
+        N1[Analyzer Consumer] --> N2[Tool Runners]
+    end
     A4 -->|publish| RD[(redis)]
     RD --> W1
     W1 --> W2 --> W3 --> W4 --> W5 --> W6 --> W7 --> W8
+    W3 -->|задачи analyzers| RD
+    RD --> N1
 ```
 
 ### 5.1 Пайплайн анализа (этапы)
 
 1. **Ingest** — принимает GitLab URL + параметры (токен, ветка, include/exclude), создаёт
    `Project` и `AnalysisRun(status=queued)`.
-2. **Clone** — worker клонирует репозиторий во временную рабочую директорию (shallow, по ветке).
+2. **Clone** — worker клонирует репозиторий в общий volume `/data/repos/<run_id>` (shallow, по ветке);
+   путь доступен контейнеру `analyzer`.
 3. **Tech detection** — определяет языки и фреймворки по манифестам
    (`pom.xml`, `build.gradle`, `*.csproj`, `CMakeLists.txt`, `requirements.txt`/`pyproject.toml`,
    `package.json`). Формирует первичный реестр технологий.
-4. **Language analysis** — по обнаруженным языкам запускает соответствующие анализаторы:
+4. **Language analysis** — по обнаруженным языкам `worker` последовательно ставит задачи в очередь
+   `analyzers`; контейнер `analyzer` выполняет соответствующие инструменты над клоном:
    - Java / Kotlin / C# / TS/JS → **ArchGuard scanner** (services map, API producers/consumers,
      database map, зависимости модулей/пакетов/классов/методов).
    - C++ → **doxygen** (call/include графы) + **cpp-dependencies** (`#include` в `.dot`).
    - Python → **pyan** (call graph) + **pyreverse** (UML классов/пакетов).
    - Node/TS → **dependency-cruiser** (граф модулей, правила) + **madge** (визуальный граф).
+
+   Задачи выполняются по одной; `worker` дожидается результата каждой и забирает артефакт из
+   `/data/artifacts/<run_id>`.
 5. **API extraction** — извлекает и нормализует API-контракты (см. §6).
 6. **Deployment extraction** — извлекает модель развёртывания (см. §7).
 7. **Merge** — сводит результаты в единую внутреннюю модель архитектуры (граф элементов и связей
@@ -206,7 +220,7 @@ artifacts(id, run_id, kind, path, content bytea/text)          -- dsl, openapi.y
 
 ## 11. Развёртывание (docker-compose)
 
-Сервисы (см. §4): `web`, `api`, `worker`, `postgres`, `neo4j`, `redis`.
+Сервисы (см. §4): `web`, `api`, `worker`, `analyzer`, `postgres`, `neo4j`, `redis`.
 
 ```yaml
 # фрагмент docker-compose.yml
@@ -217,20 +231,26 @@ services:
   redis:     { image: redis:7-alpine }
   api:       { build: ./api,    depends_on: [postgres, neo4j, redis], ports: ["8000:8000"] }
   worker:    { build: ./worker, depends_on: [postgres, neo4j, redis],
-               volumes: ["/var/run/docker.sock:/var/run/docker.sock"] }
+               volumes: ["data:/data"] }
+  analyzer:  { build: ./analyzer, depends_on: [redis],
+               volumes: ["data:/data"], environment: [CELERY_QUEUES=analyzers] }
   web:       { build: ./web,    depends_on: [api],      ports: ["8080:80"] }
+volumes:
+  data: {}
+  pgdata: {}
+  neo4jdata: {}
 ```
 
 Запуск: `docker compose up -d` → `web` на `:8080`, `api` на `:8000`.
 
 ## 12. Нефункциональные требования и границы
 
-- **Изоляция**: каждый анализатор — отдельный образ; сбой одного инструмента не валит пайплайн
-  (ошибки уровня инструмента ловятся и помечаются, остальные этапы продолжаются).
+- **Изоляция**: анализаторы работают в выделенном контейнере `analyzer`; сбой одного инструмента не
+  валит пайплайн (ошибки уровня инструмента ловятся и помечаются, остальные этапы продолжаются).
 - **Масштаб**: количество проектов/запусков лимитируется очередью Celery; воркеры горизонтально
   масштабируются.
 - **Безопасность**: GitLab-токен хранится зашифрованно (Fernet/KMS), в клонирование передаётся
-  только на время работы; доступ к docker-сокету ограничен.
+  только на время работы; Docker-сокет не используется, анализатор видит только общий volume.
 - **Границы v1**: монорепо поддерживается (несколько манифестов/языков в одном репо), но
   кросс-репозиторные зависимости и runtime-трафик (APM) не покрываются.
 
