@@ -294,28 +294,30 @@ export function ProjectsPage({ onOpenProject }: Props) {
                   </span>
                 </td>
                 <td>{formatDate(project.last_scan_at)}</td>
-                <td className="row-actions">
-                  <button
-                    className="button small"
-                    disabled={busyId === project.id}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void handleStart(project.id);
-                    }}
-                  >
-                    Анализ
-                  </button>
-                  <button
-                    className="icon-button"
-                    title="Удалить проект"
-                    disabled={busyId === project.id}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void handleDelete(project.id, project.name);
-                    }}
-                  >
-                    ×
-                  </button>
+                <td className="actions-cell">
+                  <div className="row-actions">
+                    <button
+                      className="button small"
+                      disabled={busyId === project.id}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleStart(project.id);
+                      }}
+                    >
+                      Анализ
+                    </button>
+                    <button
+                      className="icon-button"
+                      title="Удалить проект"
+                      disabled={busyId === project.id}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleDelete(project.id, project.name);
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
