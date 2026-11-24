@@ -51,13 +51,15 @@ giturizr/
     ├── Dockerfile
     ├── package.json
     └── src/
-        ├── api/                 # client
-        ├── pages/{ProjectList,ProjectDetail,RunDetail}.tsx
+        ├── api.ts / apiCatalog.ts
+        ├── App.tsx                 # два таба, hash-роутинг
         └── components/
-            ├── DependencyGraph.tsx   # Cytoscape.js
-            ├── C4Diagram.tsx         # Mermaid
+            ├── ProjectsPage.tsx      # таблица + пагинация
+            ├── ScanPage.tsx          # прогресс/этапы, вкладки
+            ├── GraphView.tsx         # Cytoscape + ForceAtlas2
+            ├── C4View.tsx            # Graphviz / Mermaid
             ├── ApiView.tsx           # API-каталог
-            ├── TechRegistry.tsx
+            ├── TechTable.tsx
             └── DeploymentView.tsx
 ```
 
@@ -154,11 +156,11 @@ giturizr/
 | P6.1 | Два таба: проекты (поиск/фильтр/сортировка/пагинация 10–100) и сканирование (этап/прогресс/счётчики) | UI |
 | P6.2 | Статус запуска + поллинг/прогресс | UI |
 | P6.3 | Граф (Cytoscape.js + ForceAtlas2): drag узлов, Вписать/Пересчитать, drill-down, подсветка | UI |
-| P6.4 | C4-диаграммы (Mermaid) | UI |
+| P6.4 | C4 container diagram (Graphviz fdp) + Mermaid fallback | UI |
 | P6.5 | API-каталог: поиск/фильтры/пагинация, панель деталей, deep links | UI |
 | P6.6 | Таблица реестра технологий | UI |
 | P6.7 | Просмотр deployment | UI |
-| P6.8 | Экспорт: DSL/JSON/OpenAPI/CSV | UI |
+| P6.8 | Экспорт: DSL/JSON/OpenAPI/CSV/C4 SVG | UI |
 
 **DoD P6**: сквозное демо — ввод URL → визуализация архитектуры. М4.
 

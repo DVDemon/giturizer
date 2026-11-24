@@ -27,7 +27,7 @@
 |---|---------|----------|--------|
 | 1 | Бэкенд | Python + FastAPI | Принято |
 | 2 | БД | PostgreSQL (метаданные/артефакты) + Neo4j (граф) | Принято |
-| 3 | Веб-визуализация | Свой вьюер (Cytoscape.js + Mermaid + API-каталог) | Принято |
+| 3 | Веб-визуализация | Свой вьюер (Cytoscape.js + Graphviz/Mermaid + API-каталог) | Принято |
 | 4 | Модель выполнения | Асинхронная очередь (Redis + Celery) | Принято |
 | 5 | Анализаторы | Долгоживущий контейнер `analyzer` + очередь задач | Принято |
 | 6 | Источники развёртывания | Dockerfile/compose, k8s, Helm, ArgoCD, GitLab CI | Принято |
@@ -82,7 +82,7 @@ flowchart TB
 | Контейнер | Технология | Назначение |
 |-----------|------------|------------|
 | `web` | React + TypeScript (Vite), unprivileged nginx | SPA: ввод URL, список проектов/запусков, визуализация |
-| `api` | Python + FastAPI | REST API, CRUD проектов/запусков, постановка задач, отдача результатов |
+| `api` | Python + FastAPI + Graphviz | REST API, CRUD проектов/запусков, постановка задач, отдача результатов, C4 SVG (`fdp`) |
 | `worker` | Python + Celery | Оркестрирует пайплайн (клон, детект, merge, persist), ставит задачи анализа в очередь |
 | `analyzer` | Python + Celery + Java 21 + инструменты анализа | Долгоживущий воркер очереди `analyzers`: ArchGuard scanner, doxygen, pyan, dependency-cruiser |
 | `postgres` | PostgreSQL 16 | Метаданные + снапшоты Structurizr + артефакты |
@@ -242,6 +242,8 @@ artifacts(id, run_id, kind, path, content bytea/text)          -- dsl, openapi.y
   зависимостями, плюс переключатель на **Mermaid** (System Context / Container / Component).
 - **API-каталог** — единый поиск/фильтры по всем операциям (OpenAPI/annotations/gRPC/GraphQL),
   панель деталей и deep links без конфликта с hash-роутингом.
+- **C4 SVG** — `GET /api/runs/{id}/c4.svg`: DOT из Structurizr JSON, Graphviz `fdp`,
+  кластеры систем, связанные внешние системы; кешируется, скачивается и встраивается в UI.
 - Экспорт/скачивание: `workspace.dsl`, `workspace.json`, `openapi.json`, реестр технологий (JSON/CSV).
 
 ## 11. Развёртывание (docker-compose)

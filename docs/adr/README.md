@@ -10,7 +10,7 @@
 |---|---------|--------|
 | [0001](0001-backend-stack.md) | Бэкенд на Python + FastAPI | Принято |
 | [0002](0002-database.md) | PostgreSQL (метаданные) + Neo4j (граф) | Принято |
-| [0003](0003-frontend-viewer.md) | Собственный веб-вьюер (Cytoscape.js + Mermaid + Swagger UI) | Принято |
+| [0003](0003-frontend-viewer.md) | Собственный веб-вьюер (уточнён ADR-0018/0020) | Принято |
 | [0004](0004-execution-model.md) | Асинхронное выполнение через Redis + Celery | Принято |
 | [0005](0005-analyzer-runners.md) | Анализаторы в долгоживущем контейнере `analyzer` + очередь | Принято |
 | [0006](0006-deployment-sources.md) | Источники развёртывания: Dockerfile/compose, k8s, Helm, ArgoCD, GitLab CI | Принято |

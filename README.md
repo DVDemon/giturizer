@@ -12,7 +12,8 @@
 
 **v1.0** — все фазы P0–P7 реализованы: каркас и CI, проекты/запуски, клон с submodules и анализаторы (ArchGuard + C++),
 извлечение API (OpenAPI/gRPC/GraphQL/аннотации) и deployment (compose/Dockerfile/k8s/Helm/ArgoCD/
-GitLab CI) с версиями технологий, Structurizr DSL/JSON + граф в Neo4j, веб-интерфейс.
+GitLab CI) с версиями технологий, Structurizr DSL/JSON + граф в Neo4j, ForceAtlas2-граф, C4 Graphviz, API-каталог,
+пагинация/прогресс запусков и веб-интерфейс.
 Добавлены хардненинг (cap_drop/no-new-privileges, unprivileged nginx, шифрование токенов,
 очистка клонов) и runbook.
 
@@ -83,6 +84,7 @@ make smoke
 | GET | `/api/runs/{id}/structurizr` | DSL + JSON workspace |
 | GET | `/api/runs/{id}/structurizr.dsl` | скачать `workspace.dsl` |
 | GET | `/api/runs/{id}/structurizr.json` | скачать `workspace.json` |
+| GET | `/api/runs/{id}/c4.svg` | C4 container diagram (Graphviz `fdp`, SVG) |
 | GET | `/api/runs/{id}/graph/elements` | элементы графа из Neo4j |
 | GET | `/api/runs/{id}/graph/dependencies?element_id=&depth=` | транзитивные зависимости (Cypher) |
 

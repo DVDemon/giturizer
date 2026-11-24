@@ -87,4 +87,8 @@ log "graph"
 curl -fsS "$API_URL/api/runs/$RUN_ID/graph/elements" >/dev/null || fail "graph elements"
 curl -fsS "$API_URL/api/runs/$RUN_ID/structurizr.dsl" >/dev/null || fail "dsl download"
 
+log "c4"
+curl -fsS "$API_URL/api/runs/$RUN_ID/c4.svg" -o /tmp/smoke-c4.svg || fail "c4 svg"
+grep -q '<svg' /tmp/smoke-c4.svg || fail "c4 svg is empty"
+
 log "SMOKE OK (run $RUN_ID)"
