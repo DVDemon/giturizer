@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -121,12 +122,24 @@ def _parse_argocd(document: dict, relative: str) -> dict:
     }
 
 
-def _parse_helm(document: dict, relative: str) -> dict:
+def _parse_helm(document: dict, relative: str, repo_path: Path) -> dict:
+    chart_dir = (repo_path / relative).parent
+    values = _load_yaml(chart_dir / "values.yaml")
+    templates = (
+        sorted(
+            str(template.relative_to(repo_path))
+            for template in (chart_dir / "templates").rglob("*.yaml")
+        )
+        if (chart_dir / "templates").is_dir()
+        else []
+    )
     return {
         "file": relative,
         "name": document.get("name"),
         "version": document.get("version"),
         "app_version": document.get("appVersion"),
+        "values_keys": sorted(values.keys()) if isinstance(values, dict) else [],
+        "templates": templates,
     }
 
 
@@ -150,11 +163,23 @@ def _parse_gitlab_ci(document: dict | None, relative: str) -> dict:
         for name, value in document.items()
         if name not in reserved and not name.startswith(".") and isinstance(value, dict)
     ]
-    return {"file": relative, "stages": document.get("stages") or [], "jobs": jobs}
+    images = sorted(
+        {
+            value["image"]
+            for value in document.values()
+            if isinstance(value, dict) and isinstance(value.get("image"), str)
+        }
+    )
+    return {
+        "file": relative,
+        "stages": document.get("stages") or [],
+        "jobs": jobs,
+        "images": images,
+    }
 
 
 def extract_deployment(repo_path: Path) -> dict:
-    result: dict[str, list] = {
+    result: dict[str, Any] = {
         "compose": [],
         "dockerfiles": [],
         "kubernetes": [],
@@ -178,7 +203,7 @@ def extract_deployment(repo_path: Path) -> dict:
         elif name == "chart.yaml":
             document = _load_yaml(path)
             if isinstance(document, dict):
-                result["helm"].append(_parse_helm(document, relative))
+                result["helm"].append(_parse_helm(document, relative, repo_path))
         elif name == ".gitlab-ci.yml":
             result["gitlab_ci"].append(_parse_gitlab_ci(_load_yaml(path), relative))
         elif path.suffix.lower() in {".yaml", ".yml"}:
@@ -189,4 +214,13 @@ def extract_deployment(repo_path: Path) -> dict:
                 elif kind in K8S_KINDS:
                     result["kubernetes"].append(_parse_k8s(document, relative))
 
+    result["summary"] = {
+        "compose_files": len(result["compose"]),
+        "compose_services": sum(len(item["services"]) for item in result["compose"]),
+        "dockerfiles": len(result["dockerfiles"]),
+        "kubernetes_resources": len(result["kubernetes"]),
+        "helm_charts": len(result["helm"]),
+        "argocd_apps": len(result["argocd"]),
+        "gitlab_ci_files": len(result["gitlab_ci"]),
+    }
     return result

@@ -28,3 +28,12 @@ def test_ignores_vcs_and_build_dirs(tmp_path: Path) -> None:
     technologies = detect_technologies(tmp_path)
     cpp = next(technology for technology in technologies if technology.name == "C++")
     assert "1 files" in cpp.evidence
+
+
+def test_detects_contract_languages(tmp_path: Path) -> None:
+    (tmp_path / "a.proto").write_text("message A {}\n", encoding="utf-8")
+    (tmp_path / "schema.graphql").write_text("type Query { x: Int }\n", encoding="utf-8")
+
+    names = {technology.name for technology in detect_technologies(tmp_path)}
+
+    assert {"Protocol Buffers", "GraphQL"} <= names

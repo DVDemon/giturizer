@@ -101,6 +101,13 @@ def detect_technologies(repo_path: Path) -> list[Technology]:
     if js_count:
         add("JavaScript/TypeScript", "language", f"{js_count} files")
 
+    proto_count = ext_counts.get(".proto", 0)
+    if proto_count:
+        add("Protocol Buffers", "api", f"{proto_count} files")
+    gql_count = sum(ext_counts.get(ext, 0) for ext in (".graphql", ".gql"))
+    if gql_count:
+        add("GraphQL", "api", f"{gql_count} files")
+
     build_files = {
         "CMakeLists.txt": ("CMake", "build"),
         "CMakePresets.json": ("CMake presets", "build"),

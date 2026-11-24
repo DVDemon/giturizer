@@ -30,6 +30,20 @@ def make_repo(tmp_path: Path) -> Path:
     )
     (repo / "openapi.yaml").write_text("openapi: 3.0.0\npaths: {}\n", encoding="utf-8")
     (repo / "compose.yaml").write_text("services:\n  api:\n    image: nginx\n", encoding="utf-8")
+    (repo / "proto").mkdir()
+    (repo / "proto" / "shop.proto").write_text(
+        'syntax = "proto3";\nservice Shop { rpc Get (Req) returns (Res); }\n',
+        encoding="utf-8",
+    )
+    (repo / "schema.graphql").write_text(
+        "type Query {\n  shop: Shop\n}\ntype Shop {\n  id: ID\n}\n",
+        encoding="utf-8",
+    )
+    (repo / "api").mkdir()
+    (repo / "api" / "UserController.java").write_text(
+        '@RestController\npublic class UserController {\n  @GetMapping("/users")\n}\n',
+        encoding="utf-8",
+    )
     return repo
 
 
@@ -79,7 +93,7 @@ def test_execute_run_persists_results(tmp_path: Path, session: Session) -> None:
     assert "C++" in {item["name"] for item in technologies.technologies}
 
     specs = session.scalars(select(ApiSpec).where(ApiSpec.run_id == run.id)).all()
-    assert [spec.kind for spec in specs] == ["openapi"]
+    assert {spec.kind for spec in specs} == {"openapi", "grpc", "graphql", "annotations"}
 
     deployment = session.scalars(
         select(DeploymentModel).where(DeploymentModel.run_id == run.id)
@@ -134,6 +148,11 @@ def test_results_endpoint(client: TestClient, session: Session, tmp_path: Path) 
     body = response.json()
     assert body["run"]["status"] == "done"
     assert any(item["name"] == "C++" for item in body["technologies"])
-    assert body["api_specs"][0]["kind"] == "openapi"
+    assert {spec["kind"] for spec in body["api_specs"]} == {
+        "openapi",
+        "grpc",
+        "graphql",
+        "annotations",
+    }
     assert body["deployment"]["compose"]
     assert any(artifact["kind"] == "cpp" for artifact in body["artifacts"])

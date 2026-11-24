@@ -10,11 +10,14 @@
 
 ## Статус
 
-Фаза **P2 (Пайплайн и первый анализатор)**: клонирование GitLab-репозитория, детект технологий,
-C++-анализатор в контейнере `analyzer` (doxygen + include-граф), извлечение OpenAPI и модели
-развёртывания (compose/Dockerfile/k8s/Helm/ArgoCD/GitLab CI). Результаты отдаются через API.
+Фазы **P3/P4 (API и deployment)**: извлечение API из OpenAPI, gRPC/protobuf, GraphQL и аннотаций
+фреймворков (Spring/JAX-RS, ASP.NET, FastAPI/Flask, Express); извлечение deployment из compose,
+Dockerfile, Kubernetes, Helm (`Chart.yaml`/`values.yaml`/`templates`) и ArgoCD/GitLab CI,
+со сводкой (`summary`). Пайплайн: клон → детект технологий → C++-анализатор (doxygen + include-граф)
+→ API/deployment → сохранение.
 
-Перед этим: P0 (каркас, compose, CI, Alembic), P1 (проекты/запуски, очередь).
+Перед этим: P0 (каркас, compose, CI, Alembic), P1 (проекты/запуски, очередь), P2 (клон, детект,
+C++-анализатор).
 
 ### API
 
@@ -35,7 +38,8 @@ C++-анализатор в контейнере `analyzer` (doxygen + include-�
 1. `worker` клонирует репозиторий в `/data/repos/<run_id>` (shallow, по ветке).
 2. Определяет технологии по манифестам и файлам.
 3. Ставит C++-анализатор в очередь `analyzers` (контейнер `analyzer`, doxygen + include-граф).
-4. Извлекает OpenAPI-спеки и модель развёртывания (compose, Dockerfile, k8s, Helm, ArgoCD, GitLab CI).
+4. Извлекает API (OpenAPI, gRPC, GraphQL, аннотации фреймворков) и модель развёртывания
+   (compose, Dockerfile, Kubernetes, Helm, ArgoCD, GitLab CI) со сводкой.
 5. Сохраняет всё в PostgreSQL; `GET /api/runs/{id}/results` отдаёт результат.
 
 ## Быстрый старт

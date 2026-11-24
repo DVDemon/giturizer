@@ -16,8 +16,11 @@ from archdiscovery.db.models import (
     TechRegistry,
 )
 from archdiscovery.gitlab.clone import clone_repository
+from archdiscovery.pipeline.annotations_extract import extract_annotation_specs
 from archdiscovery.pipeline.deployment_extract import extract_deployment
 from archdiscovery.pipeline.dispatch import dispatch_cpp_analyzer
+from archdiscovery.pipeline.graphql_extract import extract_graphql_specs
+from archdiscovery.pipeline.grpc_extract import extract_grpc_specs
 from archdiscovery.pipeline.openapi_extract import extract_openapi_specs
 from archdiscovery.pipeline.tech_detect import detect_technologies
 
@@ -87,7 +90,13 @@ def execute_run(
             except Exception as exc:  # noqa: BLE001 - сбой инструмента не валит пайплайн
                 warnings.append(f"cpp analyzer: {exc}")
 
-        for spec in extract_openapi_specs(repo_path):
+        specs = [
+            *extract_openapi_specs(repo_path),
+            *extract_grpc_specs(repo_path),
+            *extract_graphql_specs(repo_path),
+            *extract_annotation_specs(repo_path),
+        ]
+        for spec in specs:
             session.add(
                 ApiSpec(
                     project_id=project.id,
