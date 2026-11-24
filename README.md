@@ -116,3 +116,7 @@ make typecheck   # mypy
 
 `worker` и `analyzer` используют общий volume `data` (`/data`): клон репозитория доступен
 анализатору по тому же пути.
+
+## Лицензия
+
+Apache License 2.0 — см. [LICENSE](LICENSE).
