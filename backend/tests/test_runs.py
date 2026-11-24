@@ -57,6 +57,7 @@ def test_run_completed_by_pipeline(client: TestClient, session: Session, tmp_pat
         data_dir=tmp_path / "data",
         clone=fake_clone,
         dispatch=fake_dispatch,
+        graph_writer=lambda *_: None,
     )
     assert result is not None
     assert result.status.value == "done"

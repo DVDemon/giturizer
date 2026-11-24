@@ -125,3 +125,20 @@ class RunArtifact(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class ArchitectureSnapshot(Base):
+    __tablename__ = "architecture_snapshots"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    run_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("analysis_runs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    dsl: Mapped[str] = mapped_column(Text, nullable=False)
+    workspace: Mapped[dict] = mapped_column(JSONType, nullable=False)
+    generated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

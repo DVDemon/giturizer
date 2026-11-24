@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -9,6 +10,7 @@ from archdiscovery.crypto import TokenCipher
 from archdiscovery.db.models import (
     AnalysisRun,
     ApiSpec,
+    ArchitectureSnapshot,
     DeploymentModel,
     Project,
     RunArtifact,
@@ -21,11 +23,19 @@ from archdiscovery.pipeline.deployment_extract import extract_deployment
 from archdiscovery.pipeline.dispatch import dispatch_cpp_analyzer
 from archdiscovery.pipeline.graphql_extract import extract_graphql_specs
 from archdiscovery.pipeline.grpc_extract import extract_grpc_specs
+from archdiscovery.pipeline.model import ArchitectureModel, build_model
 from archdiscovery.pipeline.openapi_extract import extract_openapi_specs
+from archdiscovery.pipeline.structurizr import (
+    generate_dsl,
+    generate_json,
+    validate_workspace,
+)
 from archdiscovery.pipeline.tech_detect import detect_technologies
+from archdiscovery.services.graph import write_graph
 
 CloneFn = Callable[[str, str, str | None, Path], str]
 DispatchFn = Callable[[Path, Path], dict]
+GraphWriter = Callable[[uuid.UUID, ArchitectureModel], None]
 
 
 def _decrypt_token(project: Project) -> str | None:
@@ -41,8 +51,9 @@ def execute_run(
     data_dir: Path | None = None,
     clone: CloneFn = clone_repository,
     dispatch: DispatchFn = dispatch_cpp_analyzer,
+    graph_writer: GraphWriter | None = write_graph,
 ) -> AnalysisRun | None:
-    """P2: клон → технодетект → анализаторы → API/deployment → сохранение."""
+    """Клон → детект → анализаторы → API/deployment → Structurizr → Neo4j."""
     run = session.get(AnalysisRun, run_id)
     if run is None:
         return None
@@ -66,24 +77,26 @@ def execute_run(
         session.commit()
 
         technologies = detect_technologies(repo_path)
+        tech_payload = [technology.as_dict() for technology in technologies]
         session.add(
             TechRegistry(
                 project_id=project.id,
                 run_id=run.id,
-                technologies=[technology.as_dict() for technology in technologies],
+                technologies=tech_payload,
             )
         )
         session.commit()
 
+        cpp_artifact: dict | None = None
         if any(technology.name == "C++" for technology in technologies):
             try:
-                artifact = dispatch(repo_path, artifacts_dir)
+                cpp_artifact = dispatch(repo_path, artifacts_dir)
                 session.add(
                     RunArtifact(
                         run_id=run.id,
                         kind="cpp",
                         path=str(artifacts_dir / "cpp.json"),
-                        content=artifact,
+                        content=cpp_artifact,
                     )
                 )
                 session.commit()
@@ -111,6 +124,32 @@ def execute_run(
         deployment = extract_deployment(repo_path)
         session.add(DeploymentModel(project_id=project.id, run_id=run.id, model=deployment))
         session.commit()
+
+        model = build_model(
+            project_name=project.name,
+            technologies=tech_payload,
+            api_specs=specs,
+            deployment=deployment,
+            cpp_artifact=cpp_artifact,
+        )
+        workspace = generate_json(model)
+        validate_workspace(workspace)
+        dsl = generate_dsl(model)
+        session.add(
+            ArchitectureSnapshot(
+                project_id=project.id,
+                run_id=run.id,
+                dsl=dsl,
+                workspace=workspace,
+            )
+        )
+        session.commit()
+
+        if graph_writer is not None:
+            try:
+                graph_writer(run.id, model)
+            except Exception as exc:  # noqa: BLE001 - Neo4j не должен валить пайплайн
+                warnings.append(f"neo4j: {exc}")
 
         if warnings:
             session.add(

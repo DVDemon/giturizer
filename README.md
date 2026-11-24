@@ -10,14 +10,12 @@
 
 ## Статус
 
-Фазы **P3/P4 (API и deployment)**: извлечение API из OpenAPI, gRPC/protobuf, GraphQL и аннотаций
-фреймворков (Spring/JAX-RS, ASP.NET, FastAPI/Flask, Express); извлечение deployment из compose,
-Dockerfile, Kubernetes, Helm (`Chart.yaml`/`values.yaml`/`templates`) и ArgoCD/GitLab CI,
-со сводкой (`summary`). Пайплайн: клон → детект технологий → C++-анализатор (doxygen + include-граф)
-→ API/deployment → сохранение.
+Фаза **P5 (Structurizr + Neo4j)**: из накопленных данных строится C4-модель (системы, контейнеры,
+компоненты, связи, deployment), генерируются `workspace.dsl` и `workspace.json` (валидируются JSON
+Schema и Structurizr), граф идемпотентно пишется в Neo4j и доступен для транзитивных запросов.
 
-Перед этим: P0 (каркас, compose, CI, Alembic), P1 (проекты/запуски, очередь), P2 (клон, детект,
-C++-анализатор).
+Перед этим: P0 (каркас, CI, Alembic), P1 (проекты/запуски, очередь), P2 (клон, детект,
+C++-анализатор), P3/P4 (API и deployment).
 
 ### API
 
@@ -32,6 +30,11 @@ C++-анализатор).
 | GET | `/api/runs/{id}` | статус запуска |
 | GET | `/api/projects/{id}/runs` | запуски проекта |
 | GET | `/api/runs/{id}/results` | технологии, API, deployment, артефакты анализа |
+| GET | `/api/runs/{id}/structurizr` | DSL + JSON workspace |
+| GET | `/api/runs/{id}/structurizr.dsl` | скачать `workspace.dsl` |
+| GET | `/api/runs/{id}/structurizr.json` | скачать `workspace.json` |
+| GET | `/api/runs/{id}/graph/elements` | элементы графа из Neo4j |
+| GET | `/api/runs/{id}/graph/dependencies?element_id=&depth=` | транзитивные зависимости (Cypher) |
 
 ### Что делает пайплайн
 
@@ -40,7 +43,8 @@ C++-анализатор).
 3. Ставит C++-анализатор в очередь `analyzers` (контейнер `analyzer`, doxygen + include-граф).
 4. Извлекает API (OpenAPI, gRPC, GraphQL, аннотации фреймворков) и модель развёртывания
    (compose, Dockerfile, Kubernetes, Helm, ArgoCD, GitLab CI) со сводкой.
-5. Сохраняет всё в PostgreSQL; `GET /api/runs/{id}/results` отдаёт результат.
+5. Строит C4-модель, генерирует Structurizr `workspace.dsl` + `workspace.json`, валидирует их.
+6. Сохраняет снапшот в PostgreSQL и идемпотентно пишет граф в Neo4j.
 
 ## Быстрый старт
 

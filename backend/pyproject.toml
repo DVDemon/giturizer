@@ -19,6 +19,7 @@ dependencies = [
     "neo4j>=5.26",
     "cryptography>=43",
     "pyyaml>=6.0",
+    "jsonschema>=4.23",
 ]
 
 [project.optional-dependencies]

@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from archdiscovery import __version__
-from archdiscovery.api.routes import health, projects, results, runs
+from archdiscovery.api.routes import health, projects, results, runs, structurizr
 from archdiscovery.config import settings
 from archdiscovery.logging import configure_logging
 from archdiscovery.services.errors import DispatchError, NotFoundError
@@ -37,6 +37,7 @@ app.include_router(health.router)
 app.include_router(projects.router)
 app.include_router(runs.router)
 app.include_router(results.router)
+app.include_router(structurizr.router)
 
 
 @app.exception_handler(NotFoundError)

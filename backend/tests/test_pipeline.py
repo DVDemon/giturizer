@@ -80,6 +80,7 @@ def test_execute_run_persists_results(tmp_path: Path, session: Session) -> None:
         data_dir=tmp_path / "data",
         clone=fake_clone,
         dispatch=fake_dispatch,
+        graph_writer=lambda *_: None,
     )
 
     assert result is not None
@@ -141,6 +142,7 @@ def test_results_endpoint(client: TestClient, session: Session, tmp_path: Path) 
         data_dir=tmp_path / "data",
         clone=fake_clone,
         dispatch=fake_dispatch,
+        graph_writer=lambda *_: None,
     )
 
     response = client.get(f"/api/runs/{run['id']}/results")
@@ -156,3 +158,9 @@ def test_results_endpoint(client: TestClient, session: Session, tmp_path: Path) 
     }
     assert body["deployment"]["compose"]
     assert any(artifact["kind"] == "cpp" for artifact in body["artifacts"])
+
+    structurizr = client.get(f"/api/runs/{run['id']}/structurizr")
+    assert structurizr.status_code == 200
+    artifact = structurizr.json()
+    assert artifact["dsl"].startswith("workspace ")
+    assert artifact["workspace"]["name"] == "demo"
