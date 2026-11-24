@@ -53,7 +53,10 @@ P3/P4 (API и deployment), P5 (Structurizr + Neo4j).
 ### Что делает пайплайн
 
 1. `worker` клонирует репозиторий в `/data/repos/<run_id>` (shallow, по ветке).
-2. Определяет технологии по манифестам и файлам.
+2. Определяет технологии **и версии**: теги образов, `FROM` в Dockerfile, `package.json`,
+   `requirements.txt`/`pyproject.toml`, `pom.xml` (включая parent), `*.csproj`, Gradle/Maven
+   (включая wrapper), `go.mod`, CMake (`find_package`, минимальная версия, C++ standard),
+   `.nvmrc`/`.python-version`/`.java-version`.
 3. Ставит C++-анализатор в очередь `analyzers` (контейнер `analyzer`, doxygen + include-граф).
 4. Извлекает API (OpenAPI, gRPC, GraphQL, аннотации фреймворков) и модель развёртывания
    (compose, Dockerfile, Kubernetes, Helm, ArgoCD, GitLab CI) со сводкой.
