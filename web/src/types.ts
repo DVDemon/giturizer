@@ -7,12 +7,25 @@ export interface Project {
   provider: "github" | "gitlab" | "other";
   default_branch: string | null;
   created_at: string;
+  last_scan_at?: string | null;
+}
+
+export interface PagedProjects {
+  items: Project[];
+  total: number;
+  page: number;
+  per_page: number;
 }
 
 export interface Run {
   id: string;
   project_id: string;
   status: RunStatus;
+  stage: string | null;
+  progress: number;
+  technologies_count: number;
+  services_count: number;
+  api_count: number;
   commit_sha: string | null;
   config: Record<string, unknown>;
   error: string | null;

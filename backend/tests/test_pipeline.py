@@ -106,6 +106,11 @@ def test_execute_run_persists_results(tmp_path: Path, session: Session) -> None:
 
     artifacts = session.scalars(select(RunArtifact).where(RunArtifact.run_id == run.id)).all()
     assert {artifact.kind for artifact in artifacts} == {"cpp", "archguard"}
+    assert run.stage == "done"
+    assert run.progress == 100
+    assert run.technologies_count >= 1
+    assert run.services_count >= 1
+    assert run.api_count >= 0
 
 
 def test_execute_run_marks_failed_on_clone_error(tmp_path: Path, session: Session) -> None:

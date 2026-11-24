@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, Uuid, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from archdiscovery.db.base import Base
@@ -52,6 +52,11 @@ class AnalysisRun(Base):
         default=RunStatus.queued,
     )
     commit_sha: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    stage: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    progress: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    technologies_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    services_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    api_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     config: Mapped[dict] = mapped_column(JSONType, nullable=False, default=dict)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(

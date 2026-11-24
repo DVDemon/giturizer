@@ -18,6 +18,11 @@ class RunRead(BaseModel):
     id: uuid.UUID
     project_id: uuid.UUID
     status: RunStatus
+    stage: str | None
+    progress: int
+    technologies_count: int
+    services_count: int
+    api_count: int
     commit_sha: str | None
     config: dict[str, Any]
     error: str | None

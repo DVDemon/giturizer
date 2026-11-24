@@ -52,6 +52,24 @@ ARCHGUARD_LANGUAGES = {
 }
 
 
+def _advance(
+    session: Session,
+    run: AnalysisRun,
+    *,
+    stage: str | None = None,
+    progress: int | None = None,
+    **counters: int,
+) -> None:
+    """Фиксирует стадию/прогресс/счётчики запуска для UI."""
+    if stage is not None:
+        run.stage = stage
+    if progress is not None:
+        run.progress = progress
+    for name, value in counters.items():
+        setattr(run, name, value)
+    session.commit()
+
+
 def _decrypt_token(project: Project) -> str | None:
     if not project.token_encrypted:
         return None
@@ -80,6 +98,7 @@ def execute_run(
     run.status = RunStatus.running
     run.started_at = datetime.now(UTC)
     session.commit()
+    _advance(session, run, stage="clone", progress=3)
 
     cleanup_repo = not (settings.keep_repos if keep_repos is None else keep_repos)
 
@@ -97,6 +116,7 @@ def execute_run(
             session.commit()
         run.commit_sha = clone(project.repo_url, branch, token, repo_path)
         session.commit()
+        _advance(session, run, stage="detect", progress=15)
 
         technologies = detect_technologies(repo_path)
         tech_payload = [technology.as_dict() for technology in technologies]
@@ -108,6 +128,13 @@ def execute_run(
             )
         )
         session.commit()
+        _advance(
+            session,
+            run,
+            stage="analyzers",
+            progress=30,
+            technologies_count=len(technologies),
+        )
 
         cpp_artifact: dict | None = None
         if any(technology.name == "C++" for technology in technologies):
@@ -124,6 +151,7 @@ def execute_run(
                 session.commit()
             except Exception as exc:  # noqa: BLE001 - сбой инструмента не валит пайплайн
                 warnings.append(f"cpp analyzer: {exc}")
+        _advance(session, run, progress=45)
 
         detected_names = {technology.name for technology in technologies}
         if "Go" in detected_names and not (repo_path / "go.mod").exists():
@@ -146,6 +174,7 @@ def execute_run(
                 session.commit()
             except Exception as exc:  # noqa: BLE001 - сбой инструмента не валит пайплайн
                 warnings.append(f"archguard: {exc}")
+        _advance(session, run, progress=55)
 
         specs = [
             *extract_openapi_specs(repo_path),
@@ -164,10 +193,18 @@ def execute_run(
                 )
             )
         session.commit()
+        _advance(
+            session,
+            run,
+            stage="deployment",
+            progress=70,
+            api_count=len(specs),
+        )
 
         deployment = extract_deployment(repo_path)
         session.add(DeploymentModel(project_id=project.id, run_id=run.id, model=deployment))
         session.commit()
+        _advance(session, run, stage="model", progress=80)
 
         model = build_model(
             project_name=project.name,
@@ -175,6 +212,14 @@ def execute_run(
             api_specs=specs,
             deployment=deployment,
             cpp_artifact=cpp_artifact,
+        )
+        services_count = len([element for element in model.elements if element.type == "container"])
+        _advance(
+            session,
+            run,
+            stage="structurizr",
+            progress=90,
+            services_count=services_count,
         )
         workspace = generate_json(model)
         validate_workspace(workspace)
@@ -188,6 +233,7 @@ def execute_run(
             )
         )
         session.commit()
+        _advance(session, run, stage="graph", progress=95)
 
         if graph_writer is not None:
             try:
@@ -206,8 +252,10 @@ def execute_run(
             )
             session.commit()
 
+        _advance(session, run, stage="done", progress=100)
         run.status = RunStatus.done
     except Exception as exc:  # noqa: BLE001 - причину фиксируем в запуске
+        run.stage = "failed"
         session.rollback()
         failed_run = session.get(AnalysisRun, run_id) or run
         failed_run.status = RunStatus.failed

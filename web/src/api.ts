@@ -1,6 +1,7 @@
 import type {
   Dependency,
   GraphElement,
+  PagedProjects,
   Project,
   Run,
   RunResults,
@@ -37,10 +38,30 @@ export interface CreateProjectPayload {
   token?: string;
 }
 
+export interface ProjectListParams {
+  search?: string;
+  provider?: string;
+  sort?: string;
+  order?: string;
+  page?: number;
+  per_page?: number;
+}
+
 export const api = {
   health: () => request<{ status: string }>("/health"),
 
-  projects: () => request<Project[]>("/api/projects"),
+  projects: (params: ProjectListParams = {}) => {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== "") {
+        query.set(key, String(value));
+      }
+    }
+    const suffix = query.toString();
+    return request<PagedProjects>(`/api/projects${suffix ? `?${suffix}` : ""}`);
+  },
+  project: (projectId: string) =>
+    request<Project>(`/api/projects/${projectId}`),
   createProject: (payload: CreateProjectPayload) =>
     request<Project>("/api/projects", {
       method: "POST",

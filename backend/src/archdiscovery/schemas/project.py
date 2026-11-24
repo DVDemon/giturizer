@@ -27,3 +27,14 @@ class ProjectRead(BaseModel):
     provider: str
     default_branch: str | None
     created_at: datetime
+
+
+class ProjectListItem(ProjectRead):
+    last_scan_at: datetime | None = None
+
+
+class PagedProjects(BaseModel):
+    items: list[ProjectListItem]
+    total: int
+    page: int
+    per_page: int

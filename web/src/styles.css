@@ -665,3 +665,364 @@ p {
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Projects / scan pages --- */
+.main-nav {
+  display: flex;
+  gap: 6px;
+  margin-left: 28px;
+}
+
+.nav-tab {
+  border: 2px solid transparent;
+  background: transparent;
+  color: inherit;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nav-tab:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.nav-tab.active {
+  background: #ffc800;
+  color: #141414;
+}
+
+.content-wide {
+  padding: 0;
+}
+
+.page {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 26px 30px 64px;
+}
+
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.page-head h2 {
+  margin: 2px 0 6px;
+  font-size: 28px;
+}
+
+.back-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #6432c8;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+.meta-line a {
+  color: #141414;
+  text-decoration: underline;
+  text-decoration-color: #ffc800;
+  text-decoration-thickness: 2px;
+}
+
+.page-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.input.select {
+  width: auto;
+  min-width: 150px;
+  padding-right: 34px;
+}
+
+.input.search {
+  flex: 1;
+  min-width: 220px;
+}
+
+.create-panel {
+  margin-bottom: 16px;
+}
+
+.create-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.table-wrap {
+  background: #fff;
+  border: 2px solid #141414;
+  border-radius: 18px;
+  overflow: auto;
+}
+
+.table-wrap.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.projects-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.projects-table th,
+.projects-table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid #e6e6e6;
+  vertical-align: middle;
+}
+
+.projects-table th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #5c5c5c;
+  background: #fafafa;
+}
+
+.projects-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.project-row {
+  cursor: pointer;
+}
+
+.project-row:hover td {
+  background: #fff8dc;
+}
+
+.project-name {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: #141414;
+  cursor: pointer;
+  text-align: left;
+}
+
+.project-name:hover {
+  text-decoration: underline;
+  text-decoration-color: #ffc800;
+  text-decoration-thickness: 3px;
+}
+
+.project-sub {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.provider-pill {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid #141414;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.provider-github {
+  background: #141414;
+  color: #fff;
+}
+
+.provider-gitlab {
+  background: #ffc800;
+  color: #141414;
+}
+
+.provider-other {
+  background: #eef0f3;
+  color: #141414;
+}
+
+.url-cell {
+  display: inline-block;
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 13px;
+  color: #4a4a4a;
+}
+
+.row-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.empty-state {
+  padding: 28px;
+  text-align: center;
+  color: #6b6b6b;
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.scan-card {
+  background: #fff;
+  border: 2px solid #141414;
+  border-radius: 20px;
+  padding: 20px 22px;
+  margin: 6px 0 18px;
+}
+
+.scan-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.progress {
+  height: 14px;
+  background: #f0f0f0;
+  border: 2px solid #141414;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: #ffc800;
+  transition: width 0.4s ease;
+}
+
+.progress-bar.live {
+  animation: progress-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes progress-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.progress-caption {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #5c5c5c;
+  margin-top: 6px;
+}
+
+.scan-counters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.counter {
+  border: 2px solid #141414;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #fafafa;
+}
+
+.counter strong {
+  display: block;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.counter span {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #5c5c5c;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.scan-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-size: 13px;
+  color: #4a4a4a;
+  border-top: 1px solid #ededed;
+  padding-top: 12px;
+}
+
+@media (max-width: 860px) {
+  .topbar {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .main-nav {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .page {
+    padding: 18px 16px 48px;
+  }
+
+  .page-head {
+    flex-direction: column;
+  }
+
+  .page-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

@@ -189,7 +189,8 @@ flowchart LR
 
 ```text
 projects(id, name, repo_url, provider, default_branch, token_encrypted, created_at)
-analysis_runs(id, project_id, status, commit_sha, config jsonb, error text,
+analysis_runs(id, project_id, status, stage, progress, technologies_count,
+services_count, api_count, commit_sha, config jsonb, error text,
               started_at, finished_at)
 architecture_snapshots(id, project_id, run_id, structurizr_dsl text,
                        structurizr_json jsonb, graph jsonb, generated_at)
@@ -269,6 +270,8 @@ volumes: { data: {}, pgdata: {}, neo4jdata: {} }
   валит пайплайн (ошибки уровня инструмента ловятся и помечаются, остальные этапы продолжаются).
 - **Масштаб**: количество проектов/запусков лимитируется очередью Celery; воркеры горизонтально
   масштабируются.
+- **UI**: два таба — «Проекты» (серверная пагинация/фильтры/сортировка) и
+  «Сканирование» (стадия, прогресс, счётчики, живые обновления).
 - **Безопасность**: access token (GitLab/GitHub) хранится зашифрованно (Fernet/KMS), ошибки клонирования
   редактируются; Docker-сокет не используется; контейнеры `api`/`worker`/`analyzer`/`web` —
   `no-new-privileges` + `cap_drop: ALL`, nginx unprivileged; наружу публикуются только
