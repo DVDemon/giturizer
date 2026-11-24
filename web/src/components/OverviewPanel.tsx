@@ -113,15 +113,9 @@ export function OverviewPanel({
               item.language === "TypeScript" && Boolean(archguard.fallback?.files);
             return (
               <div key={item.language} className="alert warning">
-                <span>
-                  {fallbackCovered
-                    ? `TypeScript: ArchGuard 2.3.0 не разобрал часть файлов; модули покрыты fallback-сканом (${archguard.fallback?.files ?? 0} файлов).`
-                    : `${item.language}: ${item.summary ?? "анализатор завершился с ошибкой"}`}
-                </span>
-                <details>
-                  <summary>Технические детали</summary>
-                  <pre>{item.error}</pre>
-                </details>
+                {fallbackCovered
+                  ? `TypeScript: ArchGuard 2.3.0 не разобрал часть файлов; использован fallback-скан (${archguard.fallback?.files ?? 0} файлов, ${archguard.fallback?.imports ?? 0} импортов).`
+                  : `${item.language}: анализатор завершился с ошибкой; подробности в логах analyzer.`}
               </div>
             );
           })}

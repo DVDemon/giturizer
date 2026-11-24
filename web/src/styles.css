@@ -1035,24 +1035,3 @@ p {
   color: #141414;
   margin-top: 10px;
 }
-
-.alert.warning details {
-  margin-top: 8px;
-}
-
-.alert.warning summary {
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.alert.warning pre {
-  margin: 8px 0 0;
-  padding: 10px;
-  max-height: 180px;
-  overflow: auto;
-  background: #fff;
-  border: 1px solid #141414;
-  border-radius: 10px;
-  font-size: 11px;
-  white-space: pre-wrap;
-}
