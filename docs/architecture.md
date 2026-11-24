@@ -238,7 +238,8 @@ artifacts(id, run_id, kind, path, content bytea/text)          -- dsl, openapi.y
 - **Cytoscape.js** — интерактивный граф зависимостей (компоненты/сервисы), раскладка
   **ForceAtlas2** (`graphology-layout-forceatlas2`), перетаскиваемые узлы, drill-down,
   фильтры и подсветка транзитивных зависимостей.
-- **Mermaid** — рендер C4-диаграмм (System Context / Container / Component) из модели.
+- **C4**: **Graphviz** (`fdp`) — container view в SVG с кластерами систем и внешними
+  зависимостями, плюс переключатель на **Mermaid** (System Context / Container / Component).
 - **API-каталог** — единый поиск/фильтры по всем операциям (OpenAPI/annotations/gRPC/GraphQL),
   панель деталей и deep links без конфликта с hash-роутингом.
 - Экспорт/скачивание: `workspace.dsl`, `workspace.json`, `openapi.json`, реестр технологий (JSON/CSV).

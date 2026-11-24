@@ -57,12 +57,28 @@ function buildMermaid(workspace: Record<string, unknown>): string {
   return lines.join("\n");
 }
 
-export function C4View({ workspace }: { workspace: Record<string, unknown> }) {
+export function C4View({
+  workspace,
+  runId,
+}: {
+  workspace: Record<string, unknown>;
+  runId: string;
+}) {
   const [svg, setSvg] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<"graphviz" | "mermaid">("graphviz");
+  const [graphvizError, setGraphvizError] = useState(false);
+  const [zoom, setZoom] = useState(100);
   const code = useMemo(() => buildMermaid(workspace), [workspace]);
 
   useEffect(() => {
+    setGraphvizError(false);
+  }, [runId]);
+
+  useEffect(() => {
+    if (mode !== "mermaid") {
+      return;
+    }
     let cancelled = false;
     mermaid.initialize({
       startOnLoad: false,
@@ -100,10 +116,65 @@ export function C4View({ workspace }: { workspace: Record<string, unknown> }) {
     return () => {
       cancelled = true;
     };
-  }, [code]);
+  }, [code, mode]);
 
-  if (error) {
-    return <p className="error">Mermaid: {error}</p>;
-  }
-  return <div className="c4" dangerouslySetInnerHTML={{ __html: svg }} />;
+  const graphvizUrl = `/api/runs/${runId}/c4.svg`;
+
+  return (
+    <div>
+      <div className="toolbar c4-toolbar">
+        <button
+          className={mode === "graphviz" ? "chip active" : "chip"}
+          onClick={() => setMode("graphviz")}
+        >
+          Graphviz
+        </button>
+        <button
+          className={mode === "mermaid" ? "chip active" : "chip"}
+          onClick={() => setMode("mermaid")}
+        >
+          Mermaid
+        </button>
+        <select
+          className="input select"
+          value={zoom}
+          onChange={(event) => setZoom(Number(event.target.value))}
+          aria-label="Масштаб C4"
+        >
+          <option value={100}>100%</option>
+          <option value={150}>150%</option>
+          <option value={200}>200%</option>
+        </select>
+        <a className="button ghost small" href={graphvizUrl} download>
+          Скачать SVG
+        </a>
+      </div>
+
+      {mode === "graphviz" &&
+        (graphvizError ? (
+          <div className="alert warning">
+            Graphviz-рендер недоступен.{" "}
+            <button className="button ghost small" onClick={() => setMode("mermaid")}>
+              Открыть Mermaid
+            </button>
+          </div>
+        ) : (
+          <div className="c4-graphviz">
+            <img
+              src={graphvizUrl}
+              alt="C4 container diagram"
+              style={{ width: `${zoom}%` }}
+              onError={() => setGraphvizError(true)}
+            />
+          </div>
+        ))}
+
+      {mode === "mermaid" &&
+        (error ? (
+          <p className="error">Mermaid: {error}</p>
+        ) : (
+          <div className="c4" dangerouslySetInnerHTML={{ __html: svg }} />
+        ))}
+    </div>
+  );
 }

@@ -4,6 +4,9 @@
 
 ### Added
 
+- **C4 container diagram через Graphviz**: DOT из Structurizr-модели, engine `fdp`,
+  endpoint `/api/runs/{id}/c4.svg`, переключатель Graphviz/Mermaid и масштаб в UI.
+  Внешние системы фильтруются по связям с контейнерами и дедуплицируются по имени.
 - **Граф: ForceAtlas2** (`graphology-layout-forceatlas2`) вместо breadthfirst;
   узлы перетаскиваются, после отпускания связанные пересчитываются ForceAtlas2;
   кнопки «Вписать»/«Пересчитать»; легенда технологий над графом убрана.

@@ -295,7 +295,7 @@ export function ScanPage({ projectId, onBack }: Props) {
               ) : tab === "graph" && structurizr ? (
                 <GraphView runId={activeRun.id} workspace={structurizr.workspace} />
               ) : tab === "c4" && structurizr ? (
-                <C4View workspace={structurizr.workspace} />
+                <C4View runId={activeRun.id} workspace={structurizr.workspace} />
               ) : tab === "api" ? (
                 <ApiView specs={results.api_specs} />
               ) : tab === "tech" ? (

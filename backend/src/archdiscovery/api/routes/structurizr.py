@@ -1,12 +1,13 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, Response
 from sqlalchemy.orm import Session
 
 from archdiscovery.config import settings
 from archdiscovery.db.session import get_session
 from archdiscovery.schemas.structurizr import StructurizrArtifact
+from archdiscovery.services.c4_graphviz import GraphvizError, render_c4_svg
 from archdiscovery.services.graph import Neo4jGraphStore
 from archdiscovery.services.structurizr import get_snapshot
 
@@ -19,6 +20,21 @@ def get_structurizr(
 ) -> StructurizrArtifact:
     snapshot = get_snapshot(session, run_id)
     return StructurizrArtifact(dsl=snapshot.dsl, workspace=snapshot.workspace)
+
+
+@router.get("/runs/{run_id}/c4.svg", response_class=Response)
+def get_c4_svg(run_id: uuid.UUID, session: Session = Depends(get_session)) -> Response:
+    """Container-диаграмма C4, отрендеренная Graphviz."""
+    snapshot = get_snapshot(session, run_id)
+    try:
+        svg = render_c4_svg(snapshot.workspace)
+    except GraphvizError as exc:
+        raise HTTPException(status_code=503, detail=f"graphviz unavailable: {exc}") from exc
+    return Response(
+        content=svg,
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
 
 
 @router.get("/runs/{run_id}/structurizr.dsl", response_class=PlainTextResponse)
