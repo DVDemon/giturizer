@@ -6,6 +6,7 @@
 |----------|------------|
 | [development-plan.md](development-plan.md) | Фазовый план создания приложения, задачи, DoD, вехи, оценки, риски |
 | [test-plan.md](test-plan.md) | Стратегия тестирования, уровни, фикстуры, CI, матрица тестов |
+| [api-flow-analysis.md](api-flow-analysis.md) | План анализа API-потоков: input API → внешний API, Tree-sitter, детекция кода с API |
 
 ## Вехи (обзор)
 
