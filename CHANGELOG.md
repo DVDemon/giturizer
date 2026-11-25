@@ -33,6 +33,11 @@
 - Fallback-скан JS/TS (файлы и локальные импорты) для модулей, не покрытых ArchGuard;
   покрытие submodules считается по ArchGuard + fallback.
 
+### Added
+
+- C4: на связях показываются прикладной протокол и транспорт (`HTTP · TCP:8080`).
+- Вкладки C4/API/Deployment скрываются, если для них нет данных.
+
 ### Changed
 
 - Публичный вывод Structurizr (`workspace.dsl`/`workspace.json`) и API `/structurizr*`

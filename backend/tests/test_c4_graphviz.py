@@ -24,7 +24,11 @@ WORKSPACE = {
                 "sourceId": "api",
                 "destinationId": "db",
                 "description": "reads/writes",
-                "properties": {"protocol": "PostgreSQL"},
+                "properties": {
+                    "protocol": "PostgreSQL",
+                    "transport": "TCP",
+                    "port": "5432",
+                },
             },
             {
                 "id": "r2",
@@ -47,6 +51,7 @@ def test_build_c4_dot_contains_clusters_and_relations() -> None:
     assert "Database\\n[PostgreSQL]" in dot
     assert "ctr_api -> ctr_db" in dot
     assert "ltail=cluster_shop" in dot
+    assert "reads/writes\\nPostgreSQL · TCP:5432" in dot
 
 
 def test_render_c4_svg_calls_dot(monkeypatch) -> None:

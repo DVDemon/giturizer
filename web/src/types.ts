@@ -120,6 +120,11 @@ export interface C4Relationship {
   sourceId: string;
   destinationId: string;
   description?: string;
+  properties?: {
+    protocol?: string;
+    transport?: string;
+    port?: string;
+  };
 }
 
 export interface C4Model {

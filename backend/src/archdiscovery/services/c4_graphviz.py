@@ -151,12 +151,17 @@ def build_c4_dot(workspace: dict[str, Any]) -> str:
             continue
         attributes = []
         description = _escape(relationship.get("description") or "")
-        if description:
-            attributes.append(f'label="{description}"')
         properties = relationship.get("properties") or {}
         protocol = _escape(properties.get("protocol") or "")
-        if protocol:
-            attributes.append(f'tooltip="{protocol}"')
+        transport = _escape(properties.get("transport") or "")
+        port = _escape(properties.get("port") or "")
+        transport_label = f"{transport}:{port}" if transport and port else transport or port
+        details = " · ".join(part for part in (protocol, transport_label) if part)
+        label = "\\n".join(part for part in (description, details) if part)
+        if label:
+            attributes.append(f'label="{label}"')
+        if details:
+            attributes.append(f'tooltip="{details}"')
         if source_id in anchor_clusters:
             attributes.append(f"ltail={anchor_clusters[source_id]}")
         if target_id in anchor_clusters:

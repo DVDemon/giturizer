@@ -13,6 +13,20 @@ function asArray(value: unknown): any[] {
   return Array.isArray(value) ? value : [];
 }
 
+function relationTechnology(properties: {
+  protocol?: string;
+  transport?: string;
+  port?: string;
+} | undefined): string {
+  if (!properties) {
+    return "";
+  }
+  const transport = properties.transport
+    ? `${properties.transport}${properties.port ? `:${properties.port}` : ""}`
+    : properties.port ?? "";
+  return [properties.protocol, transport].filter(Boolean).join(" · ");
+}
+
 function buildMermaid(model: C4Model): string {
   const lines = ["flowchart LR"];
   const nodeIds = new Map<string, string>();
@@ -52,7 +66,9 @@ function buildMermaid(model: C4Model): string {
     if (!source || !target) {
       continue;
     }
-    lines.push(`  ${source} -->|${quote(relationship.description)}| ${target}`);
+    const details = relationTechnology(relationship.properties);
+    const label = [relationship.description, details].filter(Boolean).join("<br/>");
+    lines.push(`  ${source} -->|${quote(label)}| ${target}`);
   }
 
   return lines.join("\n");
@@ -119,7 +135,7 @@ export function C4View({
     };
   }, [code, mode]);
 
-  const graphvizUrl = `/api/runs/${runId}/c4.svg`;
+  const graphvizUrl = `/api/runs/${runId}/c4.svg?v=2`;
 
   return (
     <div>

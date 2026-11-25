@@ -24,6 +24,41 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "deployment", label: "Deployment" },
 ];
 
+function c4ServiceCount(model: C4Model | null): number {
+  if (!model) {
+    return 0;
+  }
+  return model.softwareSystems.reduce((total, system) => {
+    const containers = system.containers ?? [];
+    return total + (containers.length > 0 ? containers.length : 1);
+  }, 0);
+}
+
+function hasApiData(report: RunReport | null, results: RunResults | null): boolean {
+  return Boolean(results?.api_specs.length || report?.api.length);
+}
+
+function hasDeploymentData(
+  report: RunReport | null,
+  results: RunResults | null,
+): boolean {
+  if (report?.deployment.some((item) => item.services.length > 0)) {
+    return true;
+  }
+  const deployment = results?.deployment;
+  if (!deployment) {
+    return false;
+  }
+  return Boolean(
+    deployment.compose.length ||
+      deployment.dockerfiles.length ||
+      deployment.kubernetes.length ||
+      deployment.helm.length ||
+      deployment.argocd.length ||
+      deployment.gitlab_ci.length,
+  );
+}
+
 interface Props {
   projectId: string;
   onBack: () => void;
@@ -150,6 +185,21 @@ export function ScanPage({ projectId, onBack }: Props) {
     }
   }
 
+  const visibleTabs = TABS.filter((item) => {
+    if (item.id === "c4") {
+      return c4ServiceCount(c4Model) > 1;
+    }
+    if (item.id === "api") {
+      return hasApiData(report, results);
+    }
+    if (item.id === "deployment") {
+      return hasDeploymentData(report, results);
+    }
+    return true;
+  });
+  const effectiveTab = visibleTabs.some((item) => item.id === tab)
+    ? tab
+    : "overview";
   const progress = Math.max(0, Math.min(100, activeRun?.progress ?? 0));
 
   return (
@@ -287,10 +337,10 @@ export function ScanPage({ projectId, onBack }: Props) {
           {activeRun.status === "done" && (
             <>
               <nav className="tabs">
-                {TABS.map((item) => (
+                {visibleTabs.map((item) => (
                   <button
                     key={item.id}
-                    className={tab === item.id ? "tab active" : "tab"}
+                    className={effectiveTab === item.id ? "tab active" : "tab"}
                     onClick={() => setTab(item.id)}
                   >
                     {item.label}
@@ -300,22 +350,22 @@ export function ScanPage({ projectId, onBack }: Props) {
 
               {!results ? (
                 <p className="muted">Загрузка результатов…</p>
-              ) : tab === "overview" ? (
+              ) : effectiveTab === "overview" ? (
                 <OverviewPanel
                   run={activeRun}
                   results={results}
                   report={report}
                   runId={activeRun.id}
                 />
-              ) : tab === "c4" && !c4Model ? (
+              ) : effectiveTab === "c4" && !c4Model ? (
                 <p className="muted">
                   Для этого запуска нет C4-модели — запустите анализ заново.
                 </p>
-              ) : tab === "c4" && c4Model ? (
+              ) : effectiveTab === "c4" && c4Model ? (
                 <C4View runId={activeRun.id} model={c4Model} />
-              ) : tab === "api" ? (
+              ) : effectiveTab === "api" ? (
                 <ApiView specs={results.api_specs} />
-              ) : tab === "tech" ? (
+              ) : effectiveTab === "tech" ? (
                 <TechTable technologies={results.technologies} runId={activeRun.id} />
               ) : (
                 <DeploymentView deployment={results.deployment} />
