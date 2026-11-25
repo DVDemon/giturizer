@@ -121,7 +121,7 @@ make smoke
    `.nvmrc`/`.python-version`/`.java-version`.
 3. Ставит анализаторы в очередь `analyzers` (контейнер `analyzer`): ArchGuard по языкам
    (Java/Kotlin/C#/TS/Python/Golang) и C++ (doxygen + include-граф).
-4. Строит Tree-sitter syntax-index (Java/TS/Python) для endpoint → handler,
+4. Строит Tree-sitter syntax-index (Java/TS/Python/C++ POCO) для endpoint → handler,
    извлекает API (OpenAPI, gRPC, GraphQL, аннотации фреймворков) и модель развёртывания
    (compose, Dockerfile, Kubernetes, Helm, ArgoCD, GitLab CI) со сводкой.
 5. Собирает единый JSON-отчёт: технологии, сервисы API с методами и deployment.

@@ -25,7 +25,7 @@ EXCLUDED_DIRS = {
     "tests",
     "fixtures",
 }
-SUPPORTED_LANGUAGES = {"java", "typescript", "python"}
+SUPPORTED_LANGUAGES = {"java", "typescript", "python", "cpp"}
 
 
 def _iter_files(repo_path: Path, languages: set[str]) -> Iterable[Path]:

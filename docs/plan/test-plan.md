@@ -173,6 +173,7 @@ lint (ruff, black, mypy, eslint, tsc)
 - [ ] P2 call graph: handler → service → HTTP-клиент, лимиты глубины/outbound, без `fetchone`-ложных срабатываний.
 - [ ] Внешние вызовы: PostgreSQL/Redis/S3/RabbitMQ/Kafka/MongoDB классифицируются и видны в `api_flows`.
 - [ ] POST-handler с DI (`service.create`) разрешается по типу параметра; `api_flows` содержит POST.
+- [ ] C++/POCO: `HTTPRequestHandler` + `dispatch` → route; PostgreSQL/Redis/RabbitMQ в `api_flows`.
 - [ ] Все 5 языков дают хотя бы базовый результат.
 - [ ] Deployment-модель извлекается из всех 5 источников.
 - [ ] API извлекается из всех 4 групп источников.

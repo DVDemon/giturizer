@@ -33,6 +33,7 @@
 | [0023](0023-tree-sitter-syntax.md) | Tree-sitter syntax-index для API-handler'ов | Принято |
 | [0024](0024-outbound-callgraph.md) | Call graph handler → outbound API | Принято |
 | [0025](0025-external-services-flow.md) | Не-HTTP внешние вызовы в API flow | Принято |
+| [0026](0026-poco-cpp.md) | C++/POCO в API-flow | Принято |
 
 ## Шаблон записи
 

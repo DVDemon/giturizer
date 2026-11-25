@@ -4,6 +4,8 @@
 
 ### Added
 
+- **C++/POCO в API flow**: Tree-sitter routes из `dispatch()`
+  (`HTTPRequestHandler`), PostgreSQL/Redis/RabbitMQ через типы POCO-компонентов.
 - **UI/JSON: API-потоки** — массив `api_flows` в `/report` и отдельная вкладка
   «API-потоки»; вкладка скрывается без данных.
 - **API flow: не-HTTP внешние вызовы** — PostgreSQL, Redis, S3, RabbitMQ, Kafka,

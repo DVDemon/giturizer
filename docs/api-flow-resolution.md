@@ -41,12 +41,12 @@ flowchart LR
 
 ## 2. Шаг 1: syntax-index
 
-Анализатор запускается в контейнере `analyzer` и обрабатывает Java, TypeScript/TSX
-и Python.
+Анализатор запускается в контейнере `analyzer` и обрабатывает Java, TypeScript/TSX,
+Python и C++ (POCO).
 
 Правила обхода:
 
-- расширения: `.java`, `.ts`, `.tsx`, `.py`;
+- расширения: `.java`, `.ts`, `.tsx`, `.py`, `.cpp`, `.cc`, `.cxx`, `.hpp`, `.hh`, `.h`;
 - исключаются каталоги: `.git`, `node_modules`, `vendor`, `target`, `build`,
   `dist`, `generated`, `test`, `tests`, `fixtures`;
 - файлы больше 2 МБ пропускаются;
@@ -74,7 +74,8 @@ flowchart LR
 - class-level: типы полей/параметров класса;
 - method-level: параметры и локальные объявления метода;
 - Python/TS: `name: Type` (включая constructor params NestJS);
-- Java: `Type name` для полей/параметров/локальных переменных.
+- Java: `Type name` для полей/параметров/локальных переменных;
+- C++: `Type& name` / `Type* name` (POCO-компоненты вроде `PostgresStore& store_`).
 
 Итоговая карта `method["types"]` объединяет типы класса и метода. Это позволяет
 отличить `ProjectService.create` от `OtherService.create`.
@@ -105,6 +106,7 @@ Handler — это функция/метод, зарегистрированны
 | Express/Fastify | `app.get/post`, `router.get/post`, `fastify.get/post` | 0.60 |
 | FastAPI | `@router.post`, `@app.get`, ... + `APIRouter(prefix=...)` | 0.90 |
 | Flask | `@app.route(..., methods=[...])` | 0.80 |
+| C++ POCO | класс : `HTTPRequestHandler`, `dispatch`/`handleRequest`, условия `method` + `segments` | 0.80 |
 
 Клиентские интерфейсы исключаются:
 
@@ -193,11 +195,11 @@ HTTP-вызов определяется по:
 
 | kind | Маркеры |
 |---|---|
-| `postgresql` | postgres, psycopg, asyncpg, jdbc, jdbctemplate, r2dbc |
+| `postgresql` | postgres, psycopg, asyncpg, jdbc, jdbctemplate, r2dbc, Poco Data/PostgreSQL |
 | `database` | sqlalchemy, datasource, repository |
-| `redis` | redis, jedis, lettuce, redisson, ioredis |
+| `redis` | redis, jedis, lettuce, redisson, ioredis, redis++ |
 | `s3` | s3, boto3, aws-sdk/client-s3, minio |
-| `rabbitmq` | rabbit, pika, amqp, rabbittemplate |
+| `rabbitmq` | rabbit, pika, amqp, rabbittemplate, AmqpClient |
 | `kafka` | kafka, kafkatemplate, confluent, kafkajs |
 | `mongodb` | mongo, mongotemplate |
 | `elasticsearch` | elasticsearch, opensearch |
@@ -345,6 +347,29 @@ interface BillingClient {
 `BillingClient` не считается входным API; его метод — terminal HTTP-клиент.
 Вызов из handler записывается как `kind = "http"`.
 
+### 8.4. C++/POCO
+
+```cpp
+if (method == "POST" && segments.size() == 1 && segments[0] == "users") {
+    createUser(request, response);
+    return;
+}
+```
+
+→ `POST /users`, handler `createUser`.
+
+```text
+POST /users
+  createUser → store_.createUser       postgresql
+POST /users
+  createUser → cache_.set              redis
+POST /users
+  createUser → producer_.publish       rabbitmq
+```
+
+Тип `store_` берётся из `PostgresStore& store_`, `cache_` — из
+`RedisCache& cache_`, `producer_` — из `RabbitMQProducer& producer_`.
+
 ## 9. Ограничения P2
 
 - неизвестный receiver с несколькими одноимёнными методами не разрешается;
@@ -355,7 +380,8 @@ interface BillingClient {
 - возможны ложные срабатывания на похожих именах (`fetchone` больше не
   считается HTTP, но эвристики остаются);
 - FastAPI `include_router(prefix=...)` не суммируется с prefix роутера;
-- C++/Kotlin/Go пока не входят в syntax-index (C++ — doxygen, P5);
+- C++ поддерживает только POCO `dispatch`-паттерн; другие C++ фреймворки — P5;
+- Kotlin/Go пока не входят в syntax-index;
 - нет runtime-трафика, DI-прокси и reflection.
 
 ## 10. Диагностика

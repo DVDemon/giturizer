@@ -46,6 +46,7 @@ SYNTAX_LANGUAGES = {
     "Java": "java",
     "JavaScript/TypeScript": "typescript",
     "Python": "python",
+    "C++": "cpp",
 }
 
 ARCHGUARD_LANGUAGES = {

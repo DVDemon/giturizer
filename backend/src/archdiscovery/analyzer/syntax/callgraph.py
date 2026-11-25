@@ -109,8 +109,9 @@ def _targets_for(
     type_name = (method.get("types") or {}).get(receiver)
     if type_name:
         exact = [item for item in candidates if item.get("class") == type_name]
-        if exact:
-            return exact
+        # Тип известен, но его реализации нет в индексе (внешняя библиотека):
+        # не подменяем вызов случайным одноимённым методом.
+        return exact
     if receiver:
         exact = [item for item in candidates if item.get("class") == receiver]
         if exact:

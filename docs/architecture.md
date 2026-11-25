@@ -38,7 +38,7 @@
 | 11 | Связь worker ↔ analyzer | Общая очередь + shared volume (без docker.sock) | Принято |
 | 12 | Доступ к GitLab/GitHub | access token (опционально) | Принято |
 | 13 | Провайдеры | GitHub (public) + GitLab, авто-ветка | Принято |
-| 14 | Анализатор | Tree-sitter syntax-index + ArchGuard scanner + C++ (doxygen), submodules | Принято |
+| 14 | Анализатор | Tree-sitter (Java/TS/Python/C++ POCO) + ArchGuard + C++ (doxygen), submodules | Принято |
 
 Полный реестр — в [`docs/adr/README.md`](adr/README.md).
 
@@ -135,7 +135,7 @@ flowchart LR
    `package.json`). Формирует первичный реестр технологий.
 4. **Language analysis** — по обнаруженным языкам `worker` последовательно ставит задачи в очередь
    `analyzers`; контейнер `analyzer` выполняет соответствующие инструменты над клоном:
-   - Java / TypeScript / Python → **Tree-sitter syntax-index** (endpoint → handler, call graph, outbound calls, source ranges);
+   - Java / TypeScript / Python / C++ POCO → **Tree-sitter syntax-index** (endpoint → handler, call graph, outbound calls, source ranges);
      подробно: [api-flow-resolution.md](api-flow-resolution.md);
    - Java / Kotlin / C# / TS/JS / Python / Go → **ArchGuard scanner** (Java-фичи apicalls/datamap:
      services map, API, database map; классы и модули). Анализаторы предзагружены в образ,
@@ -321,8 +321,8 @@ volumes: { data: {}, pgdata: {} }
 [`docs/plan/development-plan.md`](plan/development-plan.md) и
 [`docs/plan/test-plan.md`](plan/test-plan.md).
 
-- Покрытие C++ на уровне «сервисов» слабое (doxygen/cpp-dependencies дают только include/call-графы) —
-  связь C++-модулей с API/сервисами остаётся ручной.
+- Покрытие C++ вне POCO слабое (doxygen/cpp-dependencies дают include/call-графы);
+  для POCO routes/внешние вызовы теперь даёт Tree-sitter (ADR-0026).
 - Поддержка монорепо с несколькими deployables и маппинг «код ↔ сервис» требует уточнения.
 - Граф архитектуры хранится в PostgreSQL как C4-снапшот (см. [ADR-0022](adr/0022-postgres-only.md));
   публичные graph-API и UI-граф удалены.

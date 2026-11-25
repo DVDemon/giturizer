@@ -14,6 +14,12 @@ LANGUAGE_BY_SUFFIX = {
     ".ts": "typescript",
     ".tsx": "tsx",
     ".py": "python",
+    ".cpp": "cpp",
+    ".cc": "cpp",
+    ".cxx": "cpp",
+    ".hpp": "cpp",
+    ".hh": "cpp",
+    ".h": "cpp",
 }
 IMPORT_TYPES = {
     "import_declaration",
@@ -24,6 +30,8 @@ CLASS_TYPES = {
     "class_declaration",
     "interface_declaration",
     "class_definition",
+    "class_specifier",
+    "struct_specifier",
 }
 FUNCTION_TYPES = {
     "function_declaration",
@@ -39,6 +47,7 @@ TYPE_ANNOTATION_RE = re.compile(r"\b([A-Za-z_]\w*)\s*:\s*([A-Z][A-Za-z0-9_.]*)")
 JAVA_TYPE_RE = re.compile(
     r"\b([A-Z][A-Za-z0-9_<>?, ]*?)\s+([a-z_]\w*)\s*(?=[=;,\)]|$)", re.MULTILINE
 )
+CPP_TYPE_RE = re.compile(r"\b([A-Z]\w*(?:::\w+)*)\s*[&*]+\s*([a-z_]\w*)")
 HTTP_CLIENT_RE = re.compile(
     r"(?i)(?:axios|httpx|requests|aiohttp|resttemplate|webclient|feign|okhttp|httpclient|httpservice|superagent)"
     r"(?:\.|\()|(?:^|\.)fetch(?:\(|$)|(?:^|\.)got(?:\(|$)"
@@ -58,11 +67,26 @@ def _symbol_name(node: Node, source: bytes) -> str:
         child = node.child_by_field_name(field)
         if child is not None:
             raw = _text(child, source).split("(", 1)[0].strip()
+            if "::" in raw:
+                raw = raw.rsplit("::", 1)[-1]
             match = re.search(r"([A-Za-z_]\w*)\s*$", raw)
             return match.group(1) if match else raw
     raw = _text(node, source)
+    if "::" in raw:
+        raw = raw.rsplit("::", 1)[-1]
     match = re.search(r"([A-Za-z_]\w*)\s*\(", raw)
     return match.group(1) if match else raw.split("{", 1)[0].strip()
+
+
+def _qualified_class(node: Node, source: bytes) -> str | None:
+    """Класс для C++ метода вида RabbitMQProducer::publish."""
+    declarator = node.child_by_field_name("declarator")
+    while declarator is not None:
+        if declarator.type == "qualified_identifier":
+            parts = _text(declarator, source).split("::")
+            return parts[-2] if len(parts) > 1 else None
+        declarator = declarator.child_by_field_name("declarator")
+    return None
 
 
 def _call_name(node: Node, source: bytes) -> str:
@@ -144,6 +168,8 @@ def _infer_types(text: str) -> dict[str, str]:
         base = type_name.split("<", 1)[0].strip().split(".")[-1]
         if base not in {"public", "private", "protected", "final", "static"}:
             types.setdefault(name, base)
+    for type_name, name in CPP_TYPE_RE.findall(text):
+        types.setdefault(name, type_name.split("::")[-1])
     return types
 
 
@@ -177,12 +203,14 @@ def analyze_file(path: Path, repo: Path) -> dict[str, Any]:
                 }
             )
         if node.type in FUNCTION_TYPES:
+            function_class = _qualified_class(node, source) or current_class
+            current_class = function_class
             current_function = _symbol_name(node, source)
             functions.append(current_function)
             methods.append(
                 {
                     "name": current_function,
-                    "class": current_class,
+                    "class": function_class,
                     "file": relative,
                     "line": _line(node),
                     "start": node.start_byte,
@@ -195,7 +223,7 @@ def analyze_file(path: Path, repo: Path) -> dict[str, Any]:
                     "kind": "function",
                     "start": node.start_byte,
                     "end": node.end_byte,
-                    "class": current_class,
+                    "class": function_class,
                 }
             )
         if node.type in CALL_TYPES:
