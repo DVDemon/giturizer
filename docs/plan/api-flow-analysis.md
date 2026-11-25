@@ -1,6 +1,6 @@
 # План: анализ API-потоков (input API → external API)
 
-- **Статус:** Draft
+- **Статус:** P0 завершён; P1 — следующий этап
 - **Дата:** 2026-11-25
 - **Связанные ADR:** [0007](../adr/0007-api-sources.md), [0018](../adr/0018-api-catalog.md), [0021](../adr/0021-json-report.md)
 
@@ -235,7 +235,7 @@ GET /api/runs/{id}/api-flows
 
 | Этап | Работы | Результат | Оценка |
 |---|---|---|---|
-| P0 | Spike Tree-sitter vs Doxygen на C++/Java/TS/Python фикстурах; схема данных | Решение и PoC | 2–3 дня |
+| P0 | Spike Tree-sitter vs Doxygen; схема `ApiFlowEdge` | **Завершён** — [отчёт](api-flow-poc.md) | 2–3 дня |
 | P1 | Syntax index + route/handler detection (Java/TS/Python) | endpoint → handler | 1–2 недели |
 | P2 | Call graph/resolver + client calls для Java/TS/Python | handler → outbound calls | 2–3 недели |
 | P3 | URL resolution + match с API-каталогом + confidence | `api_flows` | 1–2 недели |

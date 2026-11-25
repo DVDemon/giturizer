@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ApiFlowEdge",
+  "type": "object",
+  "required": ["input", "output", "evidence", "confidence", "status"],
+  "properties": {
+    "input": {
+      "type": "object",
+      "required": ["service", "operation", "handler"],
+      "properties": {
+        "service": {"type": ["string", "null"]},
+        "operation": {"type": "string"},
+        "handler": {
+          "type": "object",
+          "required": ["file", "line", "symbol"],
+          "properties": {
+            "file": {"type": "string"},
+            "line": {"type": "integer"},
+            "symbol": {"type": "string"}
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "required": ["api", "operation", "url_template", "client"],
+      "properties": {
+        "api": {"type": ["string", "null"]},
+        "operation": {"type": ["string", "null"]},
+        "url_template": {"type": ["string", "null"]},
+        "client": {
+          "type": ["object", "null"],
+          "properties": {
+            "file": {"type": "string"},
+            "line": {"type": "integer"},
+            "symbol": {"type": "string"}
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "value"],
+        "properties": {
+          "kind": {"enum": ["route", "call", "url", "spec_match"]},
+          "file": {"type": "string"},
+          "line": {"type": "integer"},
+          "value": {"type": "string"}
+        }
+      }
+    },
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "status": {"enum": ["resolved", "partial", "unresolved"]}
+  }
+}
