@@ -67,3 +67,20 @@ def analyze_syntax_task(
         "stats": result["stats"],
         "errors": result["errors"],
     }
+
+
+@shared_task(name="analyzer.frontend")
+def analyze_frontend_task(
+    repo_path: str,
+    output_path: str,
+    run_id: str | None = None,
+) -> dict:
+    """React frontend API index (Phase 1)."""
+    from archdiscovery.analyzer.frontend.analyze import analyze_frontend
+
+    result = analyze_frontend(Path(repo_path), Path(output_path))
+    return {
+        "output_path": output_path,
+        "stats": result["stats"],
+        "errors": result["errors"],
+    }

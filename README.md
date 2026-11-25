@@ -101,6 +101,7 @@ make smoke
 | GET | `/api/runs/{id}/report` | единый JSON-отчёт (`technologies`, `api`, `deployment`, `api_flows`) |
 | GET | `/api/runs/{id}/handlers` | endpoint → handler (Tree-sitter syntax-index) |
 | GET | `/api/runs/{id}/outbound-calls` | handler → outbound HTTP-кандидат (call graph P2) |
+| GET | `/api/runs/{id}/frontend` | React frontend API index (Phase 1) |
 | GET | `/api/runs/{id}/report?download=true` | скачать отчёт как файл |
 | GET | `/api/runs/{id}/c4.model` | минимальная C4-модель для Mermaid |
 | GET | `/api/runs/{id}/c4.svg` | C4 container diagram (Graphviz `fdp`, SVG) |

@@ -9,6 +9,7 @@
 | [api-flow-analysis.md](api-flow-analysis.md) | План анализа API-потоков: input API → внешний API, Tree-sitter, детекция кода с API |
 | [api-flow-poc.md](api-flow-poc.md) | P0 PoC: Tree-sitter vs Doxygen, результаты и схема ApiFlowEdge |
 | [../api-flow-resolution.md](../api-flow-resolution.md) | Подробный алгоритм резолва API-flow |
+| [frontend-analysis.md](frontend-analysis.md) | План анализа React-фронтенда: API index, routes, UI flows |
 
 ## Вехи (обзор)
 

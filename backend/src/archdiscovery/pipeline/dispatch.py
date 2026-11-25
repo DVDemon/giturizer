@@ -58,3 +58,22 @@ def dispatch_syntax_analyzer(
     if not output.exists():
         raise RuntimeError("syntax analyzer produced no output")
     return json.loads(output.read_text(encoding="utf-8"))
+
+
+def dispatch_frontend_analyzer(
+    repo_path: Path,
+    artifacts_dir: Path,
+    timeout: int | None = None,
+    run_id: str | None = None,
+) -> dict:
+    """Ставит React frontend API index в очередь analyzers и ждёт результат."""
+    output = artifacts_dir / "frontend.json"
+    async_result = celery_app.send_task(
+        "analyzer.frontend",
+        args=[str(repo_path), str(output), run_id],
+        queue="analyzers",
+    )
+    async_result.get(timeout=timeout or settings.analyzer_timeout, disable_sync_subtasks=False)
+    if not output.exists():
+        raise RuntimeError("frontend analyzer produced no output")
+    return json.loads(output.read_text(encoding="utf-8"))

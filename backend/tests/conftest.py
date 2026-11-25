@@ -108,3 +108,31 @@ def stub_syntax_dispatch(monkeypatch):
         "archdiscovery.services.pipeline.dispatch_syntax_analyzer",
         lambda *args, **kwargs: SYNTAX_STUB,
     )
+
+
+FRONTEND_STUB = {
+    "tool": "tree-sitter",
+    "frontends": [{"root": "services/web", "name": "web", "framework": "react"}],
+    "api_calls": [
+        {
+            "file": "src/api/user.ts",
+            "line": 1,
+            "method": "GET",
+            "url_template": "/user/api/v1/user",
+            "normalized_path": "/api/v1/user",
+            "service": "fdm-auth",
+            "source": "Api.get",
+            "confidence": 0.85,
+        }
+    ],
+    "stats": {"frontends": 1, "files": 1, "api_calls": 1},
+    "errors": [],
+}
+
+
+@pytest.fixture(autouse=True)
+def stub_frontend_dispatch(monkeypatch):
+    monkeypatch.setattr(
+        "archdiscovery.services.pipeline.dispatch_frontend_analyzer",
+        lambda *args, **kwargs: FRONTEND_STUB,
+    )

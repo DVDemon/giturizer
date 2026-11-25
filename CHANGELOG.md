@@ -4,6 +4,9 @@
 
 ### Added
 
+- **React frontend API index (Phase 1)**: artifact `frontend`,
+  `GET /api/runs/{id}/frontend`; Tree-sitter извлекает `Api.*`/`axios`/`fetch`,
+  gateway-константы, method/path/service/source line.
 - **Детальный прогресс анализа**: `analysis_runs.progress_detail` (этап,
   обработано/всего файлов) обновляется Tree-sitter-анализатором и показывается
   в карточке сканирования; миграция 0008.

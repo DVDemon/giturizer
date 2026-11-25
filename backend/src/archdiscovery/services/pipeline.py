@@ -22,6 +22,7 @@ from archdiscovery.pipeline.deployment_extract import extract_deployment
 from archdiscovery.pipeline.dispatch import (
     dispatch_archguard_analyzer,
     dispatch_cpp_analyzer,
+    dispatch_frontend_analyzer,
     dispatch_syntax_analyzer,
 )
 from archdiscovery.pipeline.graphql_extract import extract_graphql_specs
@@ -41,6 +42,7 @@ CloneFn = Callable[[str, str, str | None, Path], str]
 DispatchFn = Callable[[Path, Path], dict]
 ArchguardDispatchFn = Callable[[Path, Path, list[str]], dict]
 SyntaxDispatchFn = Callable[..., dict]
+FrontendDispatchFn = Callable[..., dict]
 
 SYNTAX_LANGUAGES = {
     "Java": "java",
@@ -95,6 +97,7 @@ def execute_run(
     dispatch: DispatchFn = dispatch_cpp_analyzer,
     archguard_dispatch: ArchguardDispatchFn | None = None,
     syntax_dispatch: SyntaxDispatchFn | None = None,
+    frontend_dispatch: FrontendDispatchFn | None = None,
     keep_repos: bool | None = None,
 ) -> AnalysisRun | None:
     """Клон → детект → анализаторы → API/deployment → JSON-отчёт/C4."""
@@ -191,6 +194,22 @@ def execute_run(
                     api_flows = syntax_artifact.get("outbound_calls", [])
             except Exception as exc:  # noqa: BLE001 - сбой инструмента не валит пайплайн
                 warnings.append(f"syntax analyzer: {exc}")
+
+        if "JavaScript/TypeScript" in {technology.name for technology in technologies}:
+            try:
+                dispatcher = frontend_dispatch or dispatch_frontend_analyzer
+                frontend_artifact = dispatcher(repo_path, artifacts_dir, run_id=str(run.id))
+                session.add(
+                    RunArtifact(
+                        run_id=run.id,
+                        kind="frontend",
+                        path=str(artifacts_dir / "frontend.json"),
+                        content=frontend_artifact,
+                    )
+                )
+                session.commit()
+            except Exception as exc:  # noqa: BLE001 - сбой инструмента не валит пайплайн
+                warnings.append(f"frontend analyzer: {exc}")
 
         _advance(
             session,
