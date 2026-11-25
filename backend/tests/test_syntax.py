@@ -99,3 +99,20 @@ def test_handlers_endpoint(client: TestClient, session: Session) -> None:
 def test_handlers_endpoint_requires_run(client: TestClient) -> None:
     response = client.get(f"/api/runs/{uuid.uuid4()}/handlers")
     assert response.status_code == 404
+
+
+def test_reports_file_progress(tmp_path: Path) -> None:
+    for index in range(3):
+        write(
+            tmp_path / f"app{index}.py",
+            '@router.get("/health")\n' "def health():\n" "    ...\n",
+        )
+    events: list[tuple[int, int, str]] = []
+    analyze_syntax(
+        tmp_path,
+        tmp_path / "syntax.json",
+        progress=lambda current, total, message: events.append((current, total, message)),
+    )
+    assert events[0][0] == 0
+    assert events[-1][0] == events[-1][1] == 3
+    assert "Tree-sitter" in events[-1][2]

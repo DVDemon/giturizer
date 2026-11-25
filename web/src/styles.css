@@ -1504,6 +1504,26 @@ p {
   font-size: 0.85rem;
   color: var(--soft);
   flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.progress-detail {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--accent);
+  background: var(--gray);
+  color: var(--soft);
+  font-size: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.progress-detail strong {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .crumb-link {

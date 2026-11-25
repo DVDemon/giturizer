@@ -23,6 +23,12 @@ export interface Run {
   status: RunStatus;
   stage: string | null;
   progress: number;
+  progress_detail?: {
+    message?: string;
+    current?: number;
+    total?: number;
+    unit?: string;
+  } | null;
   technologies_count: number;
   services_count: number;
   api_count: number;

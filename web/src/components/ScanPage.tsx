@@ -290,6 +290,17 @@ export function ScanPage({ projectId, onBack }: Props) {
               <span>{progress}%</span>
               <span>{formatDuration(activeRun)}</span>
             </div>
+            {activeRun.progress_detail?.message && (
+              <div className="progress-detail">
+                <span>{activeRun.progress_detail.message}</span>
+                {(activeRun.progress_detail.total ?? 0) > 0 && (
+                  <strong>
+                    {activeRun.progress_detail.current?.toLocaleString("ru-RU") ?? 0} /{" "}
+                    {activeRun.progress_detail.total?.toLocaleString("ru-RU")} файлов
+                  </strong>
+                )}
+              </div>
+            )}
             <div className="scan-counters">
               <div className="counter">
                 <strong>{activeRun.technologies_count}</strong>

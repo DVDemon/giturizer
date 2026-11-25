@@ -81,6 +81,7 @@ services:
     cap_drop:
       - ALL
     environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://archdiscovery:archdiscovery@postgres:5432/archdiscovery}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       DATA_DIR: ${DATA_DIR:-/data}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}

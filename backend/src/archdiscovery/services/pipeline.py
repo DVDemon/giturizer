@@ -40,7 +40,7 @@ from archdiscovery.vcs.clone import clone_repository, detect_default_branch
 CloneFn = Callable[[str, str, str | None, Path], str]
 DispatchFn = Callable[[Path, Path], dict]
 ArchguardDispatchFn = Callable[[Path, Path, list[str]], dict]
-SyntaxDispatchFn = Callable[[Path, Path, list[str]], dict]
+SyntaxDispatchFn = Callable[..., dict]
 
 SYNTAX_LANGUAGES = {
     "Java": "java",
@@ -65,6 +65,7 @@ def _advance(
     *,
     stage: str | None = None,
     progress: int | None = None,
+    detail: dict | None = None,
     **counters: int,
 ) -> None:
     """Фиксирует стадию/прогресс/счётчики запуска для UI."""
@@ -72,6 +73,8 @@ def _advance(
         run.stage = stage
     if progress is not None:
         run.progress = progress
+    if detail is not None:
+        run.progress_detail = detail
     for name, value in counters.items():
         setattr(run, name, value)
     session.commit()
@@ -105,7 +108,13 @@ def execute_run(
     run.status = RunStatus.running
     run.started_at = datetime.now(UTC)
     session.commit()
-    _advance(session, run, stage="clone", progress=3)
+    _advance(
+        session,
+        run,
+        stage="clone",
+        progress=3,
+        detail={"message": "Клонирование репозитория и submodules", "unit": "files"},
+    )
 
     cleanup_repo = not (settings.keep_repos if keep_repos is None else keep_repos)
 
@@ -123,7 +132,13 @@ def execute_run(
             session.commit()
         run.commit_sha = clone(project.repo_url, branch, token, repo_path)
         session.commit()
-        _advance(session, run, stage="detect", progress=15)
+        _advance(
+            session,
+            run,
+            stage="detect",
+            progress=15,
+            detail={"message": "Определение технологий", "unit": "files"},
+        )
 
         technologies = detect_technologies(repo_path)
         tech_payload = [technology.as_dict() for technology in technologies]
@@ -141,6 +156,12 @@ def execute_run(
             stage="analyzers",
             progress=30,
             technologies_count=len(technologies),
+            detail={
+                "message": "Tree-sitter: индексация файлов",
+                "current": 0,
+                "total": 0,
+                "unit": "files",
+            },
         )
 
         syntax_languages = sorted(
@@ -154,7 +175,9 @@ def execute_run(
         if syntax_languages:
             try:
                 dispatcher = syntax_dispatch or dispatch_syntax_analyzer
-                syntax_artifact = dispatcher(repo_path, artifacts_dir, syntax_languages)
+                syntax_artifact = dispatcher(
+                    repo_path, artifacts_dir, syntax_languages, run_id=str(run.id)
+                )
                 session.add(
                     RunArtifact(
                         run_id=run.id,
@@ -169,6 +192,11 @@ def execute_run(
             except Exception as exc:  # noqa: BLE001 - сбой инструмента не валит пайплайн
                 warnings.append(f"syntax analyzer: {exc}")
 
+        _advance(
+            session,
+            run,
+            detail={"message": "C++: doxygen + include-граф", "unit": "files"},
+        )
         cpp_artifact: dict | None = None
         if any(technology.name == "C++" for technology in technologies):
             try:
@@ -193,6 +221,14 @@ def execute_run(
             {ARCHGUARD_LANGUAGES[name] for name in detected_names if name in ARCHGUARD_LANGUAGES}
         )
         if archguard_languages:
+            _advance(
+                session,
+                run,
+                detail={
+                    "message": "ArchGuard: анализ API и данных",
+                    "unit": "files",
+                },
+            )
             try:
                 dispatcher = archguard_dispatch or dispatch_archguard_analyzer
                 archguard_artifact = dispatcher(repo_path, artifacts_dir, archguard_languages)
@@ -273,7 +309,13 @@ def execute_run(
             )
         )
         session.commit()
-        _advance(session, run, stage="finalize", progress=95)
+        _advance(
+            session,
+            run,
+            stage="finalize",
+            progress=95,
+            detail={"message": "Сборка отчёта и C4", "unit": "files"},
+        )
 
         if warnings:
             session.add(
@@ -286,7 +328,13 @@ def execute_run(
             )
             session.commit()
 
-        _advance(session, run, stage="done", progress=100)
+        _advance(
+            session,
+            run,
+            stage="done",
+            progress=100,
+            detail={"message": "Готово", "unit": "files"},
+        )
         run.status = RunStatus.done
     except Exception as exc:  # noqa: BLE001 - причину фиксируем в запуске
         run.stage = "failed"

@@ -20,6 +20,7 @@ class RunRead(BaseModel):
     status: RunStatus
     stage: str | None
     progress: int
+    progress_detail: dict[str, Any] | None = None
     technologies_count: int
     services_count: int
     api_count: int

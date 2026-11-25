@@ -54,6 +54,7 @@ class AnalysisRun(Base):
     commit_sha: Mapped[str | None] = mapped_column(String(64), nullable=True)
     stage: Mapped[str | None] = mapped_column(String(32), nullable=True)
     progress: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    progress_detail: Mapped[dict | None] = mapped_column(JSONType, nullable=True)
     technologies_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     services_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     api_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

@@ -190,8 +190,10 @@ flowchart LR
 
 ```text
 projects(id, name, repo_url, provider, default_branch, token_encrypted, created_at)
-analysis_runs(id, project_id, status, stage, progress, technologies_count,
-services_count, api_count, commit_sha, config jsonb, error text,
+analysis_runs(id, project_id, status, stage, progress,
+              progress_detail jsonb,  -- message/current/total/unit
+              technologies_count, services_count, api_count,
+              commit_sha, config jsonb, error text,
               started_at, finished_at)
 architecture_snapshots(id, project_id, run_id, dsl text, workspace jsonb,
                        report jsonb, generated_at)  -- dsl/workspace — внутренние для C4

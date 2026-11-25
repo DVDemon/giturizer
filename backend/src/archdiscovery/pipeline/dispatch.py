@@ -45,12 +45,13 @@ def dispatch_syntax_analyzer(
     artifacts_dir: Path,
     languages: list[str],
     timeout: int | None = None,
+    run_id: str | None = None,
 ) -> dict:
     """Ставит Tree-sitter syntax-index в очередь analyzers и ждёт результат."""
     output = artifacts_dir / "syntax.json"
     async_result = celery_app.send_task(
         "analyzer.syntax",
-        args=[str(repo_path), str(output), list(languages)],
+        args=[str(repo_path), str(output), list(languages), run_id],
         queue="analyzers",
     )
     async_result.get(timeout=timeout or settings.analyzer_timeout, disable_sync_subtasks=False)
