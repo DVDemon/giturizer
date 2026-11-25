@@ -538,68 +538,6 @@ p {
   font-size: 0.85rem;
 }
 
-.graph-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 16px;
-  min-height: 560px;
-}
-.graph-main {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-}
-.graph-hint {
-  margin: 0;
-  font-size: 12px;
-}
-
-.graph-canvas {
-  background: var(--paper);
-  border: 1px solid var(--ink);
-  border-radius: var(--radius);
-  min-height: 560px;
-}
-.graph-side {
-  background: var(--gray);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 14px;
-}
-.graph-side h3 {
-  font-size: 0.9rem;
-  font-weight: 500;
-  margin-bottom: 8px;
-}
-.deps {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.85rem;
-}
-.dot {
-  display: inline-block;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  margin-right: 6px;
-  background: var(--blue);
-}
-.dot-softwareSystem {
-  background: var(--yellow);
-  border: 1px solid var(--black);
-}
-.dot-container {
-  background: var(--blue);
-}
-.dot-component {
-  background: var(--purple);
-}
-
 .c4 {
   background: var(--paper);
   border: 1px solid var(--ink);
@@ -638,9 +576,6 @@ p {
     max-height: none;
     border-right: none;
     border-bottom: 1px solid var(--line);
-  }
-  .graph-layout {
-    grid-template-columns: 1fr;
   }
 }
 
@@ -1415,40 +1350,6 @@ p {
   .api-table {
     min-width: 680px;
   }
-}
-
-/* --- ForceAtlas2 graph --- */
-.graph-main {
-  position: relative;
-}
-
-.graph-toolbar {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 6px 4px 12px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 2px solid #141414;
-  border-radius: 999px;
-}
-
-.graph-layout-badge {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.graph-canvas canvas {
-  cursor: grab;
-}
-
-.graph-canvas canvas:active {
-  cursor: grabbing;
 }
 
 

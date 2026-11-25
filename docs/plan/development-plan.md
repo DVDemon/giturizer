@@ -56,7 +56,6 @@ giturizr/
         └── components/
             ├── ProjectsPage.tsx      # таблица + пагинация
             ├── ScanPage.tsx          # прогресс/этапы, вкладки
-            ├── GraphView.tsx         # Cytoscape + ForceAtlas2
             ├── C4View.tsx            # Graphviz / Mermaid
             ├── ApiView.tsx           # API-каталог
             ├── TechTable.tsx
@@ -155,7 +154,7 @@ giturizr/
 |----|--------|-----------|
 | P6.1 | Два таба: проекты (поиск/фильтр/сортировка/пагинация 10–100) и сканирование (этап/прогресс/счётчики) | UI |
 | P6.2 | Статус запуска + поллинг/прогресс | UI |
-| P6.3 | Граф (Cytoscape.js + ForceAtlas2): drag узлов, Вписать/Пересчитать, drill-down, подсветка | UI |
+| P6.3 | UI-граф убран из карточек систем; Neo4j API графа сохранён | UI |
 | P6.4 | C4 container diagram (Graphviz fdp) + Mermaid fallback | UI |
 | P6.5 | API-каталог: поиск/фильтры/пагинация, панель деталей, deep links | UI |
 | P6.6 | Таблица реестра технологий | UI |

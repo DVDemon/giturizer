@@ -27,7 +27,7 @@
 |---|---------|----------|--------|
 | 1 | Бэкенд | Python + FastAPI | Принято |
 | 2 | БД | PostgreSQL (метаданные/артефакты) + Neo4j (граф) | Принято |
-| 3 | Веб-визуализация | Свой вьюер (Cytoscape.js + Graphviz/Mermaid + API-каталог) | Принято |
+| 3 | Веб-визуализация | Свой вьюер (Graphviz/Mermaid + API-каталог) | Принято |
 | 4 | Модель выполнения | Асинхронная очередь (Redis + Celery) | Принято |
 | 5 | Анализаторы | Долгоживущий контейнер `analyzer` + очередь задач | Принято |
 | 6 | Источники развёртывания | Dockerfile/compose, k8s, Helm, ArgoCD, GitLab CI | Принято |
@@ -235,13 +235,12 @@ artifacts(id, run_id, kind, path, content bytea/text)          -- dsl, openapi.y
 
 Свой вьюер ([ADR-0003](adr/0003-frontend-viewer.md)):
 
-- **Cytoscape.js** — интерактивный граф зависимостей (компоненты/сервисы), раскладка
-  **ForceAtlas2** (`graphology-layout-forceatlas2`), перетаскиваемые узлы, drill-down,
-  фильтры и подсветка транзитивных зависимостей.
 - **C4**: **Graphviz** (`fdp`) — container view в SVG с кластерами систем и внешними
   зависимостями, плюс переключатель на **Mermaid** (System Context / Container / Component).
 - **API-каталог** — единый поиск/фильтры по всем операциям (OpenAPI/annotations/gRPC/GraphQL),
   панель деталей и deep links без конфликта с hash-роутингом.
+- Граф архитектуры остаётся в Neo4j и доступен через API (`/graph/elements`,
+  `/graph/dependencies`); интерактивный граф из карточек систем убран.
 - **C4 SVG** — `GET /api/runs/{id}/c4.svg`: DOT из Structurizr JSON, Graphviz `fdp`,
   кластеры систем, связанные внешние системы; кешируется, скачивается и встраивается в UI.
 - Экспорт/скачивание: `workspace.dsl`, `workspace.json`, `openapi.json`, реестр технологий (JSON/CSV).

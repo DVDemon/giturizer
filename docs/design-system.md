@@ -34,14 +34,12 @@
 | Метрики | серый фон `#F1F2F6`, светлая обводка, крупное число medium |
 | Табы | активный — жёлтая нижняя линия 3 px |
 | Бейджи статусов | «пилюля» с семантическим цветом (green/red/blue/gray) |
-| Граф (Cytoscape, ForceAtlas2) | система — жёлтый, контейнер — синий, компонент — фиолетовый; рёбра серые; узлы перетаскиваются |
 | C4 (Graphviz/Mermaid) | Graphviz fdp: жёлтые внешние системы, синие контейнеры; Mermaid fallback |
 | API-каталог | светлый, method-бейджи, панель деталей |
 
 ## Где в коде
 
 - [web/src/styles.css](../web/src/styles.css) — токены и все компоненты.
-- [web/src/components/GraphView.tsx](../web/src/components/GraphView.tsx) — палитра графа.
 - [web/src/components/C4View.tsx](../web/src/components/C4View.tsx) — Graphviz SVG + Mermaid fallback.
 - [web/index.html](../web/index.html) — подключение Golos Text, `theme-color`.
 
@@ -49,8 +47,6 @@
 ## Скриншоты
 
 ![Обзор](assets/ui-screenshot.png)
-
-![Граф зависимостей](assets/ui-graph.png)
 
 ![C4-диаграмма](assets/ui-c4.png)
 

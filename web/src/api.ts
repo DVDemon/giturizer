@@ -1,6 +1,4 @@
 import type {
-  Dependency,
-  GraphElement,
   PagedProjects,
   Project,
   Run,
@@ -83,13 +81,6 @@ export const api = {
     request<RunResults>(`/api/runs/${runId}/results`),
   structurizr: (runId: string) =>
     request<StructurizrArtifact>(`/api/runs/${runId}/structurizr`),
-
-  graphElements: (runId: string) =>
-    request<GraphElement[]>(`/api/runs/${runId}/graph/elements`),
-  dependencies: (runId: string, elementId: string, depth = 3) =>
-    request<Dependency[]>(
-      `/api/runs/${runId}/graph/dependencies?element_id=${encodeURIComponent(elementId)}&depth=${depth}`,
-    ),
 };
 
 export function structurizrDownloadUrl(runId: string, format: "dsl" | "json") {

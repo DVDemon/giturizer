@@ -6,12 +6,11 @@ import type { Project, Run, RunResults, StructurizrArtifact } from "../types";
 import { ApiView } from "./ApiView";
 import { C4View } from "./C4View";
 import { DeploymentView } from "./DeploymentView";
-import { GraphView } from "./GraphView";
 import { OverviewPanel } from "./OverviewPanel";
 import { StatusBadge } from "./StatusBadge";
 import { TechTable } from "./TechTable";
 
-type Tab = "overview" | "graph" | "c4" | "api" | "tech" | "deployment";
+type Tab = "overview" | "c4" | "api" | "tech" | "deployment";
 
 function initialTab(): Tab {
   return new URLSearchParams(window.location.search).has("op") ? "api" : "overview";
@@ -19,7 +18,6 @@ function initialTab(): Tab {
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "overview", label: "Обзор" },
-  { id: "graph", label: "Граф" },
   { id: "c4", label: "C4" },
   { id: "api", label: "API" },
   { id: "tech", label: "Технологии" },
@@ -288,12 +286,10 @@ export function ScanPage({ projectId, onBack }: Props) {
                 <p className="muted">Загрузка результатов…</p>
               ) : tab === "overview" ? (
                 <OverviewPanel run={activeRun} results={results} runId={activeRun.id} />
-              ) : (tab === "graph" || tab === "c4") && !structurizr ? (
+              ) : tab === "c4" && !structurizr ? (
                 <p className="muted">
                   Для этого запуска нет Structurizr-снапшота — запустите анализ заново.
                 </p>
-              ) : tab === "graph" && structurizr ? (
-                <GraphView runId={activeRun.id} workspace={structurizr.workspace} />
               ) : tab === "c4" && structurizr ? (
                 <C4View runId={activeRun.id} workspace={structurizr.workspace} />
               ) : tab === "api" ? (

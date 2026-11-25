@@ -101,20 +101,3 @@ export interface StructurizrArtifact {
   dsl: string;
   workspace: Record<string, unknown>;
 }
-
-export interface GraphElement {
-  id: string;
-  name: string;
-  type: string;
-  technology: string | null;
-}
-
-export interface Dependency {
-  id: string;
-  name: string;
-  type: string;
-  distance: number;
-  protocol?: string | null;
-  transport?: string | null;
-  port?: string | null;
-}

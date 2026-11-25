@@ -30,6 +30,11 @@
 - Fallback-скан JS/TS (файлы и локальные импорты) для модулей, не покрытых ArchGuard;
   покрытие submodules считается по ArchGuard + fallback.
 
+### Removed
+
+- Интерактивный граф (вкладка «Граф», ForceAtlas2, Cytoscape/graphology) убран
+  из карточек систем. Данные графа по-прежнему доступны через Neo4j API.
+
 ### Fixed
 
 - Конфликт hash-роутинга приложения и Redoc-ссылок (`#tag/...`) устранён:
