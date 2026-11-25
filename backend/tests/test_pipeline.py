@@ -82,7 +82,6 @@ def test_execute_run_persists_results(tmp_path: Path, session: Session) -> None:
         data_dir=tmp_path / "data",
         clone=fake_clone,
         dispatch=fake_dispatch,
-        graph_writer=lambda *_: None,
     )
 
     assert result is not None
@@ -149,7 +148,6 @@ def test_results_endpoint(client: TestClient, session: Session, tmp_path: Path) 
         data_dir=tmp_path / "data",
         clone=fake_clone,
         dispatch=fake_dispatch,
-        graph_writer=lambda *_: None,
     )
 
     response = client.get(f"/api/runs/{run['id']}/results")
@@ -194,7 +192,6 @@ def test_repo_is_removed_after_run(tmp_path: Path, session: Session) -> None:
         data_dir=tmp_path / "data",
         clone=fake_clone,
         dispatch=fake_dispatch,
-        graph_writer=lambda *_: None,
     )
 
     assert not (tmp_path / "data" / "repos" / str(run.id)).exists()
@@ -214,7 +211,6 @@ def test_keep_repos_flag_keeps_clone(tmp_path: Path, session: Session) -> None:
         data_dir=tmp_path / "data",
         clone=fake_clone,
         dispatch=lambda *_: {"language": "C++", "stats": {}},
-        graph_writer=lambda *_: None,
         keep_repos=True,
     )
 
@@ -238,7 +234,6 @@ def test_analyzer_failure_keeps_run_done_with_warning(tmp_path: Path, session: S
         data_dir=tmp_path / "data",
         clone=fake_clone,
         dispatch=failing_dispatch,
-        graph_writer=lambda *_: None,
     )
 
     assert result is not None
@@ -288,7 +283,6 @@ def test_pipeline_detects_default_branch(tmp_path: Path, session: Session, monke
         data_dir=tmp_path / "data",
         clone=fake_clone,
         dispatch=lambda *_: {"language": "C++", "stats": {}},
-        graph_writer=lambda *_: None,
     )
 
     assert result is not None

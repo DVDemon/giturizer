@@ -38,7 +38,8 @@ const STAGE_LABELS: Record<string, string> = {
   model: "Сборка модели",
   structurizr: "C4 и отчёт",
   report: "C4 и отчёт",
-  graph: "Neo4j",
+  graph: "Финализация",
+  finalize: "Финализация",
   done: "Готово",
   failed: "Ошибка",
 };

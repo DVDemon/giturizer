@@ -1,5 +1,4 @@
 import shutil
-import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -26,7 +25,7 @@ from archdiscovery.pipeline.dispatch import (
 )
 from archdiscovery.pipeline.graphql_extract import extract_graphql_specs
 from archdiscovery.pipeline.grpc_extract import extract_grpc_specs
-from archdiscovery.pipeline.model import ArchitectureModel, build_model
+from archdiscovery.pipeline.model import build_model
 from archdiscovery.pipeline.openapi_extract import extract_openapi_specs
 from archdiscovery.pipeline.report import build_report
 from archdiscovery.pipeline.structurizr import (
@@ -35,12 +34,10 @@ from archdiscovery.pipeline.structurizr import (
     validate_workspace,
 )
 from archdiscovery.pipeline.tech_detect import detect_technologies
-from archdiscovery.services.graph import write_graph
 from archdiscovery.vcs.clone import clone_repository, detect_default_branch
 
 CloneFn = Callable[[str, str, str | None, Path], str]
 DispatchFn = Callable[[Path, Path], dict]
-GraphWriter = Callable[[uuid.UUID, ArchitectureModel], None]
 ArchguardDispatchFn = Callable[[Path, Path, list[str]], dict]
 
 ARCHGUARD_LANGUAGES = {
@@ -85,10 +82,9 @@ def execute_run(
     clone: CloneFn = clone_repository,
     dispatch: DispatchFn = dispatch_cpp_analyzer,
     archguard_dispatch: ArchguardDispatchFn | None = None,
-    graph_writer: GraphWriter | None = write_graph,
     keep_repos: bool | None = None,
 ) -> AnalysisRun | None:
-    """Клон → детект → анализаторы → API/deployment → JSON-отчёт/C4 → Neo4j."""
+    """Клон → детект → анализаторы → API/deployment → JSON-отчёт/C4."""
     run = session.get(AnalysisRun, run_id)
     if run is None:
         return None
@@ -240,13 +236,7 @@ def execute_run(
             )
         )
         session.commit()
-        _advance(session, run, stage="graph", progress=95)
-
-        if graph_writer is not None:
-            try:
-                graph_writer(run.id, model)
-            except Exception as exc:  # noqa: BLE001 - Neo4j не должен валить пайплайн
-                warnings.append(f"neo4j: {exc}")
+        _advance(session, run, stage="finalize", progress=95)
 
         if warnings:
             session.add(

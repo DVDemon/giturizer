@@ -26,7 +26,7 @@
 Все архитектурные решения приняты (см. [реестр ADR](../adr/README.md)):
 
 - [ADR-0012](../adr/0012-gitlab-access.md) — access token;
-- [ADR-0010](../adr/0010-graph-storage.md) — Neo4j;
+- [ADR-0022](../adr/0022-postgres-only.md) — PostgreSQL-only;
 - [ADR-0011](../adr/0011-worker-analyzer-interaction.md) — очередь + общий volume (без docker.sock);
 - [ADR-0021](../adr/0021-json-report.md) — единый JSON-отчёт.
 - [ADR-0009](../adr/0009-structurizr-output.md) — прежний Structurizr-вывод (заменён).

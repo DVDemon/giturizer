@@ -32,7 +32,7 @@
 | Слой | Инструменты |
 |------|-------------|
 | Бэкенд | `pytest`, `pytest-asyncio`, `pytest-cov`, `httpx.AsyncClient`/`TestClient`, `respx`, `freezegun`, `hypothesis` (для парсеров) |
-| Интеграция | `testcontainers-python` (postgres, neo4j, redis), `celery` eager mode, `fakeredis` |
+| Интеграция | `testcontainers-python` (postgres, redis), `celery` eager mode, `fakeredis` |
 | Контракты | `jsonschema` (JSON-отчёт), `schemathesis` (опц.) |
 | Анализаторы | `pytest`-обёртки + реальные образы (маркер `@pytest.mark.docker`) |
 | Веб | `vitest`, `@testing-library/react`, `msw`, `Playwright` |
@@ -46,7 +46,7 @@
 
 - `tech_detect` — маппинг манифестов → языки/фреймворки.
 - `merge` — склейка, дедупликация, стабильность ID (ID не «прыгают» между прогонами).
-- `graph` — маппинг модели в узлы/рёбра Neo4j, генерация Cypher-запросов.
+- `graph` — внутренний C4-снапшот PostgreSQL (без Neo4j).
 - `report.json` — golden-снапшот единого отчёта.
 - `deployment/*` — парсеры YAML/Dockerfile/GitLab CI на фикстурах.
 - `api_extractors/*` — нормализация OpenAPI/gRPC/GraphQL/аннотаций.
@@ -69,7 +69,7 @@ tests/fixtures/repos/<name>/   →   запуск шага   →   ожидае�
 - Миграции + CRUD через `testcontainers` (PostgreSQL).
 - Celery: постановка задачи + смена статусов (eager/`fakeredis`).
 - `respx` — мок GitHub/GitLab HTTP; локальный git-репозиторий как фикстура.
-- Neo4j через `testcontainers`: запись графа (`MERGE`), транзитивные запросы Cypher,
+- PostgreSQL: JSON-отчёт/C4-снапшоты, консистентность данных,
   идемпотентность повторной записи, согласованность с PostgreSQL после сбоя.
 - Контейнер `analyzer` (маркер `@pytest.mark.docker`): задача из очереди `analyzers` → инструмент
   отрабатывает фикстуру в общем volume → JSON-артефакт появляется на месте.
@@ -134,7 +134,7 @@ GitLab-источник подменяется лёгким `git-http` конт�
 | api_extractors | ✅ | ✅ | — | ✅ | ✅ | — | — |
 | deployment/* | ✅ | ✅ | — | — | ✅ | — | — |
 | merge/model | ✅ | ✅ | — | ✅ | — | — | — |
-| graph/neo4j | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
+| report/c4 | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
 | report gen | ✅ | ✅ | — | ✅ | ✅ | — | — |
 | persist/artifacts | ✅ | — | ✅ | ✅ | ✅ | — | ✅ |
 | web UI | ✅ | — | — | — | ✅ | — | — |
@@ -144,7 +144,7 @@ GitLab-источник подменяется лёгким `git-http` конт�
 ```text
 lint (ruff, black, mypy, eslint, tsc)
   → unit (pytest, vitest)
-  → integration (services: postgres, neo4j, redis; testcontainers)
+  → integration (services: postgres, redis; testcontainers)
   → build (образы api/worker/web/analyzers)
   → e2e (ручной job: docker compose + scripts/smoke.sh)
   → coverage gate (--cov-fail-under=75) + артефакты
@@ -173,7 +173,7 @@ lint (ruff, black, mypy, eslint, tsc)
 - [ ] Deployment-модель извлекается из всех 5 источников.
 - [ ] API извлекается из всех 4 групп источников.
 - [ ] JSON-отчёт содержит technologies/api/deployment и скачивается.
-- [ ] Граф в Neo4j согласован с PostgreSQL; транзитивные запросы корректны.
+- [ ] C4-снапшот и JSON-отчёт согласованы в PostgreSQL.
 - [ ] Веб показывает C4, API, технологии, deployment; граф доступен через API.
 - [ ] Сбой одного анализатора не роняет весь запуск.
 - [ ] Токен не утекает в логи/артефакты.

@@ -26,7 +26,7 @@
 | # | Решение | Значение | Статус |
 |---|---------|----------|--------|
 | 1 | Бэкенд | Python + FastAPI | Принято |
-| 2 | БД | PostgreSQL (метаданные/артефакты) + Neo4j (граф) | Принято |
+| 2 | БД | PostgreSQL (метаданные/артефакты/JSON-отчёт/C4) | Принято |
 | 3 | Веб-визуализация | Свой вьюер (Graphviz/Mermaid + API-каталог) | Принято |
 | 4 | Модель выполнения | Асинхронная очередь (Redis + Celery) | Принято |
 | 5 | Анализаторы | Долгоживущий контейнер `analyzer` + очередь задач | Принято |
@@ -34,7 +34,7 @@
 | 7 | Источники API | OpenAPI, gRPC/protobuf, GraphQL, аннотации фреймворков | Принято |
 | 8 | Аутентификация | Одиночный пользователь / внутренний | Принято |
 | 9 | Формат результата | единый JSON-отчёт (technologies/api/deployment) | Принято |
-| 10 | Хранение графа | Neo4j | Принято |
+| 10 | Хранение графа | PostgreSQL JSONB (C4-модель) | Принято |
 | 11 | Связь worker ↔ analyzer | Общая очередь + shared volume (без docker.sock) | Принято |
 | 12 | Доступ к GitLab/GitHub | access token (опционально) | Принято |
 | 13 | Провайдеры | GitHub (public) + GitLab, авто-ветка | Принято |
@@ -49,7 +49,7 @@ flowchart LR
     U[Пользователь / архитектор] --> W[ArchDiscovery]
     W --> G[GitHub / GitLab (источник кода)]
     W --> R[Реестры Docker-образов]
-    W --> D[PostgreSQL + Neo4j + Redis]
+    W --> D[PostgreSQL + Redis]
     W --> A[Анализаторы: ArchGuard, doxygen, pyan, dependency-cruiser, ...]
 ```
 
@@ -57,7 +57,7 @@ flowchart LR
 - **GitHub / GitLab** — источник исходного кода. Публичные репозитории клонируются
   анонимно, приватные — по access token; провайдер определяется по URL.
 - **Реестры образов** — необязательно: определения образов из Dockerfile/k8s/Helm.
-- **PostgreSQL + Neo4j + Redis** — метаданные/артефакты, граф архитектуры и очередь задач.
+- **PostgreSQL + Redis** — метаданные/артефакты/отчёт/C4 и очередь задач.
 
 ## 4. Контейнеры (C4: Containers)
 
@@ -66,13 +66,11 @@ flowchart TB
     subgraph compose[Архитектура внутри docker-compose]
         WEB[web — SPA (React/TS)] --> API[api — FastAPI]
         API --> PG[(postgres)]
-        API --> N4J[(neo4j)]
         API --> RD[(redis)]
         API -->|задача| RD
         RD --> WK[worker — Celery, очередь pipeline]
         RD --> AN[analyzer — Celery, очередь analyzers]
         WK --> PG
-        WK --> N4J
         WK -->|clone| VOL[(volume data: repos / artifacts)]
         AN -->|read/write| VOL
         WK --> GIT[GitHub/GitLab clone]
@@ -86,7 +84,6 @@ flowchart TB
 | `worker` | Python + Celery | Оркестрирует пайплайн (клон, детект, merge, persist), ставит задачи анализа в очередь |
 | `analyzer` | Python + Celery + Java 21 + инструменты анализа | Долгоживущий воркер очереди `analyzers`: ArchGuard scanner, doxygen, pyan, dependency-cruiser |
 | `postgres` | PostgreSQL 16 | Метаданные + JSON-отчёты + внутренняя C4-модель |
-| `neo4j` | Neo4j 5 | Граф архитектуры: элементы, связи, транзитивные запросы |
 | `redis` | Redis 7 | Брокер очереди + кэш статусов |
 
 > Примечание: анализаторы работают в долгоживущем контейнере `analyzer` и вызываются через очередь
@@ -154,7 +151,7 @@ flowchart LR
    в терминах C4 + deployment nodes + API + реестр технологий).
 8. **Report generation** — собирает единый JSON (`technologies`, `api`, `deployment`)
    из артефактов анализа; внутренняя C4-модель генерируется для вкладки C4.
-9. **Persist** — пишет метаданные/отчёт/C4-модель в PostgreSQL, граф — в Neo4j
+9. **Persist** — пишет метаданные/отчёт/C4-модель в PostgreSQL
    (`MERGE` по `element_id`), артефакты и обновляет статус.
 10. **Serve** — API отдаёт JSON-отчёт и данные вкладок; веб рендерит.
 
@@ -187,7 +184,7 @@ flowchart LR
 Результат — `deploymentNodes` (Deployment Node → Container Instance) и `deploymentRelationships`
 в терминах C4/deployment, плюс связи «контейнер → deployment node».
 
-## 8. Модель данных (PostgreSQL + Neo4j)
+## 8. Модель данных (PostgreSQL)
 
 ```text
 projects(id, name, repo_url, provider, default_branch, token_encrypted, created_at)
@@ -202,9 +199,8 @@ deployment_models(id, project_id, run_id, model jsonb)         -- nodes + relati
 artifacts(id, run_id, kind, path, content bytea/text)          -- dsl, openapi.yaml, raw outputs
 ```
 
-- **Граф архитектуры** (elements + relationships) хранится в **Neo4j**; `architecture_snapshots.graph`
-  (JSONB) — только слепок/экспорт для воспроизводимости и импорта, не источник для графовых запросов
-  ([ADR-0010](adr/0010-graph-storage.md)). Транзитивные запросы — Cypher (`MATCH ... -[*1..N]-> ...`).
+- **Граф архитектуры** (elements + relationships) хранится внутри `architecture_snapshots.workspace`
+  (JSONB) и используется для C4; отдельного графового хранилища нет ([ADR-0022](adr/0022-postgres-only.md)).
 - `architecture_snapshots.report` — единый публичный JSON-отчёт; `dsl`/`workspace` —
   внутренние данные для C4 и наружу не отдаются.
 
@@ -247,7 +243,7 @@ artifacts(id, run_id, kind, path, content bytea/text)          -- dsl, openapi.y
   минимальный `/c4.model` и SVG `/c4.svg`. Решение — [ADR-0021](adr/0021-json-report.md).
 
 Связи несут **протоколы транспортного и прикладного уровня** (`transport`, `protocol`, `port`):
-они определяются по образу/порту целевого сервиса и попадают в Neo4j-рёбра и подписи C4.
+они определяются по образу/порту целевого сервиса и попадают в C4-подписи.
 Базовые правила:
 
 | Цель | Прикладной | Транспорт | Порт |
@@ -273,21 +269,19 @@ artifacts(id, run_id, kind, path, content bytea/text)          -- dsl, openapi.y
 - Вкладка **Deployment** скрывается, если нет данных о развёртывании.
 - **Обзор** — компактная плашка (URL + статус), статистика запуска и раскрывающееся
   JSON-дерево отчёта с кнопкой скачивания.
-- Граф архитектуры остаётся в Neo4j как внутреннее хранилище; публичные graph-API удалены.
+- Граф архитектуры остаётся в PostgreSQL (C4-снапшот); публичные graph-API удалены.
 - **C4 SVG** — `GET /api/runs/{id}/c4.svg`: DOT из внутренней C4-модели, Graphviz `fdp`,
   кластеры систем, связанные внешние системы; кешируется и встраивается в UI.
 - Экспорт: JSON-отчёт (`/report?download=true`), API-каталог CSV, реестр технологий, C4 SVG.
 
 ## 11. Развёртывание (docker-compose)
 
-Сервисы (см. §4): `web`, `api`, `worker`, `analyzer`, `postgres`, `neo4j`, `redis`.
+Сервисы (см. §4): `web`, `api`, `worker`, `analyzer`, `postgres`, `redis`.
 
 ```yaml
 # фрагмент docker-compose.yml (полная версия — в корне репозитория)
 services:
   postgres:  { image: postgres:16, volumes: [pgdata:/var/lib/postgresql/data] }
-  neo4j:     { image: neo4j:5,     environment: [NEO4J_AUTH=neo4j/archdiscovery],
-               volumes: [neo4jdata:/data] }
   redis:     { image: redis:7-alpine }
   api:       { build: { context: ./backend,  dockerfile: Dockerfile.api },
                ports: ["${API_PORT:-8000}:8000"] }
@@ -296,7 +290,7 @@ services:
   analyzer:  { build: { context: .,          dockerfile: analyzer/Dockerfile },
                volumes: [data:/data] }
   web:       { build: ./web, ports: ["${WEB_PORT:-8080}:8080"] }
-volumes: { data: {}, pgdata: {}, neo4jdata: {} }
+volumes: { data: {}, pgdata: {} }
 ```
 
 Запуск: `docker compose up -d` → `web` на `:8080`, `api` на `:8000`.
@@ -312,7 +306,7 @@ volumes: { data: {}, pgdata: {}, neo4jdata: {} }
 - **Безопасность**: access token (GitLab/GitHub) хранится зашифрованно (Fernet/KMS), ошибки клонирования
   редактируются; Docker-сокет не используется; контейнеры `api`/`worker`/`analyzer`/`web` —
   `no-new-privileges` + `cap_drop: ALL`, nginx unprivileged; наружу публикуются только
-  `api`/`web`/`neo4j` (см. [ADR-0014](adr/0014-container-hardening.md)).
+  `api`/`web` (см. [ADR-0014](adr/0014-container-hardening.md)).
 - **Ретеншн**: клон удаляется после запуска по умолчанию (`KEEP_REPOS=true` — оставить);
   артефакты хранятся в `/data/artifacts/<run_id>` (см. [ADR-0013](adr/0013-clone-retention.md)).
 - **Границы v1**: монорепо поддерживается (несколько манифестов/языков в одном репо), но
@@ -327,6 +321,6 @@ volumes: { data: {}, pgdata: {}, neo4jdata: {} }
 - Покрытие C++ на уровне «сервисов» слабое (doxygen/cpp-dependencies дают только include/call-графы) —
   связь C++-модулей с API/сервисами остаётся ручной.
 - Поддержка монорепо с несколькими deployables и маппинг «код ↔ сервис» требует уточнения.
-- Граф архитектуры хранится в Neo4j как внутреннее хранилище (см. [ADR-0010](adr/0010-graph-storage.md));
-  публичные graph-API удалены, UI-граф убран.
+- Граф архитектуры хранится в PostgreSQL как C4-снапшот (см. [ADR-0022](adr/0022-postgres-only.md));
+  публичные graph-API и UI-граф удалены.
 - Мультиарендность и GitLab/GitHub OAuth — отложены до v2 ([ADR-0008](adr/0008-auth.md)).

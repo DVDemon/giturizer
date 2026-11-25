@@ -45,6 +45,8 @@
 
 ### Removed
 
+- **Neo4j удалён полностью** (ADR-0022): сервис/том/драйвер/`NEO4J_*` настройки и
+  `graph_writer`; единственный источник данных — PostgreSQL.
 - Интерактивный граф (вкладка «Граф», ForceAtlas2, Cytoscape/graphology) убран
   из карточек систем; публичные `/graph/*` API удалены, Neo4j остаётся внутренним.
 - Удалены лишние API: `/structurizr`, `/structurizr.dsl`, `/structurizr.json`,

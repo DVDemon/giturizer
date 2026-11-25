@@ -6,7 +6,6 @@
 |--------|---------------|------------|
 | `web` | `${WEB_PORT:-8080}` → 8080 | SPA (unprivileged nginx) |
 | `api` | `${API_PORT:-8000}` → 8000 | FastAPI |
-| `neo4j` | `${NEO4J_HTTP_PORT:-7474}`, `${NEO4J_BOLT_PORT:-7687}` | Neo4j Browser / Bolt |
 | `postgres`, `redis` | не публикуются | внутренняя сеть compose |
 
 `worker` и `analyzer` не публикуют порты; `analyzer` использует общий volume `data`.
@@ -18,8 +17,6 @@
 | `API_PORT` / `WEB_PORT` | 8000 / 8080 | порты на хосте |
 | `POSTGRES_USER/PASSWORD/DB` | archdiscovery | PostgreSQL |
 | `DATABASE_URL` | `postgresql+psycopg://...@postgres:5432/...` | подключение к БД |
-| `NEO4J_USER/NEO4J_PASSWORD` | neo4j / archdiscovery | Neo4j |
-| `NEO4J_URL` | `bolt://neo4j:7687` | Bolt-эндпоинт |
 | `REDIS_URL` | `redis://redis:6379/0` | брокер Celery |
 | `DATA_DIR` | `/data` | клоны и артефакты |
 | `TOKEN_ENCRYPTION_KEY` | dev-значение | ключ шифрования токенов GitHub/GitLab |
@@ -46,6 +43,13 @@ docker compose exec api alembic upgrade head
 ```
 
 Остановка: `make down` (с удалением volume — `docker compose down -v`, осторожно: удаляет БД).
+
+После обновления до PostgreSQL-only удалите осиротевший контейнер/том Neo4j:
+
+```bash
+docker compose up -d --remove-orphans
+docker volume rm archdiscovery_neo4jdata  # данные Neo4j были производными
+```
 
 Если PyPI недоступен в вашей сети, сборка поддерживает альтернативный индекс:
 
@@ -80,7 +84,7 @@ docker compose exec redis redis-cli llen analyzers
 
 ## 6. Данные и ретеншн
 
-Volumes: `pgdata` (PostgreSQL), `neo4jdata` (граф), `data` (клоны + артефакты).
+Volumes: `pgdata` (PostgreSQL), `data` (клоны + артефакты).
 
 - По умолчанию **клон удаляется после завершения анализа** (`KEEP_REPOS=false`).
 - Артефакты (`/data/artifacts/<run_id>/`) сохраняются; удаление проекта каскадно удаляет записи
@@ -100,11 +104,6 @@ docker run --rm -v archdiscovery_data:/data alpine \
 docker compose exec -T postgres pg_dump -U archdiscovery archdiscovery > backup.sql
 cat backup.sql | docker compose exec -T postgres psql -U archdiscovery archdiscovery
 
-# Neo4j (офлайн-дамп; остановите neo4j перед дампом)
-docker compose stop neo4j
-docker compose run --rm neo4j neo4j-admin database dump neo4j --to-path=/data/backup
-docker compose up -d neo4j
-
 # Артефакты (volume)
 docker run --rm -v archdiscovery_data:/data -v "$PWD":/backup alpine \
   tar czf /backup/artifacts.tar.gz -C /data artifacts
@@ -120,7 +119,7 @@ docker run --rm -v archdiscovery_data:/data -v "$PWD":/backup alpine \
 - Контейнеры `api`, `worker`, `analyzer`, `web`: `no-new-privileges`, `cap_drop: ALL`;
   nginx — unprivileged-образ (порт 8080, без root).
 - Docker-сокет не монтируется; анализаторы запускаются внутри выделенного контейнера.
-- Наружу публикуются только `api`, `web`, `neo4j`. Для внешнего доступа ставьте reverse proxy с TLS
+- Наружу публикуются только `api`, `web`. Для внешнего доступа ставьте reverse proxy с TLS
   и ограничением по сети/VPN.
 
 ## 9. Траблшутинг
@@ -133,8 +132,6 @@ docker run --rm -v archdiscovery_data:/data -v "$PWD":/backup alpine \
 | C++-анализатор упал | артефакт `pipeline_warnings` в `/results`; логи `analyzer`; doxygen в образе |
 | ArchGuard по языку упал | блок `errors` в артефакте `archguard`; Java/Python продолжают работать (TS-парсер 2.3.0 падает на части синтаксиса) |
 | Submodules не склонированы | `git clone --recurse-submodules` требует доступ к URL подмодулей; проверьте `.gitmodules` и токен |
-| Neo4j недоступен | запуск завершится `done` с warning `neo4j: ...`; graph-эндпоинты вернут 503 |
-| graph-эндпоинт 503 | `docker compose ps neo4j`, креды `NEO4J_*` |
 | C4 `503 graphviz unavailable` | пересоберите `api` (`graphviz`/`fdp` в образе), проверьте `docker compose exec api fdp -V` |
 | C4 пустая/мелкая | откройте `GET /api/runs/{id}/c4.svg`, используйте масштаб 150–200%; Mermaid — как fallback |
 | JSON-отчёт пустой/404 | проверьте `GET /api/runs/{id}/report`; для старых запусков отчёт собирается лениво, для новых — на этапе analysis; логи `worker` |

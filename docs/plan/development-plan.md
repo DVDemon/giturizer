@@ -26,7 +26,7 @@ giturizr/
 │   └── src/archdiscovery/
 │       ├── config.py
 │       ├── logging.py
-│       ├── db/                  # session, models (SQLAlchemy), migrations, graph (Neo4j)
+│       ├── db/                  # session, models (SQLAlchemy), migrations
 │       ├── schemas/             # Pydantic
 │       ├── api/                 # FastAPI app + routers
 │       │   ├── main.py
@@ -72,7 +72,7 @@ giturizr/
 |----|--------|-----------|
 | P0.1 | Каркас репозитория: `backend/`, `analyzers/`, `web/`, `docs/`, `Makefile` | Структура каталогов |
 | P0.2 | `backend/pyproject.toml`: ruff, black, mypy, pytest(+cov), celery, sqlalchemy, alembic | Конфиг линтера/тестов |
-| P0.3 | `docker-compose.yml`: `postgres`, `neo4j`, `redis`, общий volume `data`, стабы `api`/`worker`/`analyzer`/`web` | `docker compose up` поднимается |
+| P0.3 | `docker-compose.yml`: `postgres`, `redis`, общий volume `data`, стабы `api`/`worker`/`analyzer`/`web` | `docker compose up` поднимается |
 | P0.4 | CI (`.gitlab-ci.yml`): lint → test | Зелёный пайплайн |
 | P0.5 | Alembic init + первая пустая миграция | Готовность к моделям |
 
@@ -144,7 +144,7 @@ giturizr/
 | P5.4 | Внутренняя C4-модель для вкладки C4 | `/c4.model` |
 | P5.5 | Валидация структуры JSON + golden-тесты | Гарантия формата |
 | P5.6 | Persist артефактов + эндпоинты скачивания | `artifacts` |
-| P5.7 | Neo4j: клиент, схема узлов/рёбер, идемпотентный `MERGE` графа, Cypher-запросы (транзитивные зависимости) | Граф в Neo4j |
+| P5.7 | Граф — внутри C4-снапшота PostgreSQL; отдельное graph-хранилище не используется | PostgreSQL-only |
 
 **DoD P5**: JSON-отчёт валиден и скачивается; C4-модель отдаётся; goldens стабильны. М3.
 
@@ -154,7 +154,7 @@ giturizr/
 |----|--------|-----------|
 | P6.1 | Два таба: проекты (поиск/фильтр/сортировка/пагинация 10–100) и сканирование (этап/прогресс/счётчики) | UI |
 | P6.2 | Статус запуска + поллинг/прогресс | UI |
-| P6.3 | UI-граф убран из карточек систем; Neo4j API графа сохранён | UI |
+| P6.3 | UI-граф и graph-API удалены; Neo4j удалён (ADR-0022) | UI |
 | P6.4 | C4 container diagram (Graphviz fdp) + Mermaid fallback | UI |
 | P6.5 | API-каталог: поиск/фильтры/пагинация, панель деталей, deep links | UI |
 | P6.6 | Таблица реестра технологий | UI |
@@ -198,5 +198,5 @@ giturizr/
 | C++ даёт мало сервисной информации | высокая | среднее | честно помечать как «include/call-граф» |
 | `analyzer` — единая точка отказа / «шумный сосед» | средняя | среднее | рестарт воркера, Celery retry, лимиты CPU/RAM, изоляция по каталогу `<run_id>` |
 | Рост общего volume `data` (клоны/артефакты) | средняя | среднее | TTL/ретеншн, очистка после run, лимит размера |
-| Рассинхрон двойной записи Postgres/Neo4j | средняя | высокое | идемпотентный `MERGE`, ре-импорт из JSONB-слепка, тест согласованности |
+| Двойная запись Postgres/Neo4j | устранён | — | Neo4j удалён, один источник — PostgreSQL (ADR-0022) |
 | Долгие анализы больших репо | средняя | среднее | таймауты, лимиты, прогресс-статусы |

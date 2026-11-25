@@ -115,7 +115,7 @@ make smoke
 4. Извлекает API (OpenAPI, gRPC, GraphQL, аннотации фреймворков) и модель развёртывания
    (compose, Dockerfile, Kubernetes, Helm, ArgoCD, GitLab CI) со сводкой.
 5. Собирает единый JSON-отчёт: технологии, сервисы API с методами и deployment.
-6. Сохраняет отчёт и внутреннюю C4-модель в PostgreSQL, идемпотентно пишет граф в Neo4j.
+6. Сохраняет отчёт и внутреннюю C4-модель в PostgreSQL.
 
 ## Быстрый старт
 
@@ -126,7 +126,6 @@ make up                   # docker compose up -d --build
 
 - API: http://localhost:8000/health (или `API_PORT` из `.env`)
 - UI: http://localhost:8080 (или `WEB_PORT`)
-- Neo4j Browser: http://localhost:7474
 
 Остановка:
 
@@ -152,7 +151,6 @@ make typecheck   # mypy
 | `analyzer` | Celery-воркер очереди `analyzers` (инструменты анализа) |
 | `web` | React/TS SPA (заглушка на P0) |
 | `postgres` | PostgreSQL 16 — метаданные и артефакты |
-| `neo4j` | Neo4j 5 — граф архитектуры |
 | `redis` | Redis 7 — брокер очередей |
 
 `worker` и `analyzer` используют общий volume `data` (`/data`): клон репозитория доступен
