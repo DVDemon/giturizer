@@ -8,6 +8,7 @@
 | [test-plan.md](test-plan.md) | Стратегия тестирования, уровни, фикстуры, CI, матрица тестов |
 | [api-flow-analysis.md](api-flow-analysis.md) | План анализа API-потоков: input API → внешний API, Tree-sitter, детекция кода с API |
 | [api-flow-poc.md](api-flow-poc.md) | P0 PoC: Tree-sitter vs Doxygen, результаты и схема ApiFlowEdge |
+| [../api-flow-resolution.md](../api-flow-resolution.md) | Подробный алгоритм резолва API-flow |
 
 ## Вехи (обзор)
 

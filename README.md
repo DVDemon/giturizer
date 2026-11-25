@@ -4,6 +4,7 @@
 (связи, API, технологии, deployment) и отдаёт единый JSON-отчёт: технологии, API и deployment.
 
 - Архитектура: [docs/architecture.md](docs/architecture.md)
+- Как резолвятся API-flow: [docs/api-flow-resolution.md](docs/api-flow-resolution.md)
 - Решения (ADR): [docs/adr/README.md](docs/adr/README.md)
 - План разработки: [docs/plan/development-plan.md](docs/plan/development-plan.md)
 - План тестирования: [docs/plan/test-plan.md](docs/plan/test-plan.md)

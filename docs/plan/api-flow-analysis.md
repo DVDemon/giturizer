@@ -4,6 +4,8 @@
 - **Дата:** 2026-11-25
 - **Связанные ADR:** [0007](../adr/0007-api-sources.md), [0018](../adr/0018-api-catalog.md), [0021](../adr/0021-json-report.md)
 
+> Подробный алгоритм: [api-flow-resolution.md](../api-flow-resolution.md).
+
 ## 1. Цель и границы
 
 Нужен массив связей:
