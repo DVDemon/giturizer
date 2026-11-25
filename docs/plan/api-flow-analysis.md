@@ -245,7 +245,7 @@ GET /api/runs/{id}/api-flows
 Приоритет: Java (Spring/Feign) → TypeScript (Nest/axios) → Python (FastAPI/requests) → C#/Go → C++.
 
 P1 реализован: artifact `syntax`, `GET /api/runs/{id}/handlers`, ADR-0023.
-P2 включает внешние не-HTTP зависимости (ADR-0025).
+P2 включает внешние не-HTTP зависимости (ADR-0025) и вывод типов receiver'ов: `service.create()` в DI-сервисах больше не теряется.
 
 ## 8. Тестирование и приёмка
 

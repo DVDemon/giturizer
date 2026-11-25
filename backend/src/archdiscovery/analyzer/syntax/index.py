@@ -35,6 +35,10 @@ CALL_TYPES = {"call_expression", "method_invocation", "call"}
 ANNOTATION_TYPES = {"annotation", "marker_annotation", "decorator"}
 STRING_TYPES = {"string_literal", "string", "raw_string_literal"}
 URL_RE = re.compile(r"https?://[^\s\"'`]+|/api/v\d+/[^\s\"'`]+")
+TYPE_ANNOTATION_RE = re.compile(r"\b([A-Za-z_]\w*)\s*:\s*([A-Z][A-Za-z0-9_.]*)")
+JAVA_TYPE_RE = re.compile(
+    r"\b([A-Z][A-Za-z0-9_<>?, ]*?)\s+([a-z_]\w*)\s*(?=[=;,\)]|$)", re.MULTILINE
+)
 HTTP_CLIENT_RE = re.compile(
     r"(?i)(?:axios|httpx|requests|aiohttp|resttemplate|webclient|feign|okhttp|httpclient|httpservice|superagent)"
     r"(?:\.|\()|(?:^|\.)fetch(?:\(|$)|(?:^|\.)got(?:\(|$)"
@@ -130,6 +134,17 @@ def owner_for_annotation(
     if following_functions:
         return min(following_functions, key=lambda item: item["start"])
     return None
+
+
+def _infer_types(text: str) -> dict[str, str]:
+    types: dict[str, str] = {}
+    for name, type_name in TYPE_ANNOTATION_RE.findall(text):
+        types[name] = type_name.split("<", 1)[0].split(".")[-1]
+    for type_name, name in JAVA_TYPE_RE.findall(text):
+        base = type_name.split("<", 1)[0].strip().split(".")[-1]
+        if base not in {"public", "private", "protected", "final", "static"}:
+            types.setdefault(name, base)
+    return types
 
 
 def analyze_file(path: Path, repo: Path) -> dict[str, Any]:
@@ -228,6 +243,18 @@ def analyze_file(path: Path, repo: Path) -> dict[str, Any]:
             annotation["owner_class"] = (
                 owner.get("class") if owner["kind"] == "function" else owner["name"]
             )
+
+    class_types: dict[str, dict[str, str]] = {}
+    for owner in owners:
+        if owner["kind"] != "class":
+            continue
+        class_text = source[owner["start"] : owner["end"]].decode("utf-8", "replace")
+        class_types[owner["name"]] = _infer_types(class_text)
+    for method in methods:
+        method_text = source[method["start"] : method["end"]].decode("utf-8", "replace")
+        types = dict(class_types.get(method.get("class") or "", {}))
+        types.update(_infer_types(method_text))
+        method["types"] = types
 
     return {
         "file": relative,

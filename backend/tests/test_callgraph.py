@@ -141,3 +141,37 @@ def test_report_includes_api_flows(client: TestClient, session: Session) -> None
     response = client.get(f"/api/runs/{run.id}/report")
     assert response.status_code == 200
     assert response.json()["api_flows"] == [flow]
+
+
+def test_resolves_typed_python_dependency_to_create(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text(
+        "import sqlalchemy\n"
+        "from fastapi import APIRouter, Depends\n"
+        'router = APIRouter(prefix="/api")\n'
+        "class ProjectService:\n"
+        "    def __init__(self, session):\n"
+        "        self._session = session\n"
+        "    def create(self):\n"
+        "        self._session.add(object())\n"
+        "        self._session.commit()\n"
+        "class OtherService:\n"
+        "    def create(self):\n"
+        "        pass\n"
+        "def get_service():\n"
+        "    return ProjectService(None)\n"
+        '@router.post("/projects")\n'
+        "def create_project(service: ProjectService = Depends(get_service)):\n"
+        "    return service.create()\n",
+        encoding="utf-8",
+    )
+    result = analyze_syntax(tmp_path, tmp_path / "syntax.json")
+    post = [
+        item
+        for item in result["outbound_calls"]
+        if item["input"]["operation"] == "POST /api/projects"
+    ]
+    assert post
+    assert {item["output"]["kind"] for item in post} == {"database"}
+    assert all(
+        [step["symbol"] for step in item["path"]] == ["create_project", "create"] for item in post
+    )

@@ -16,6 +16,10 @@ P1 даёт `endpoint → handler`, но не отвечает, какие вн�
   - однозначные методы по имени;
   - Feign-интерфейсы и клиентские методы как terminal;
   - прямые HTTP-клиенты: RestTemplate/WebClient, axios/fetch, requests/httpx/aiohttp.
+- Типы receiver'ов выводятся из аннотаций параметров/полей:
+  Python (`service: ProjectService`), Java-полей, TS constructor params.
+  Поэтому `service.create()` разрешается в конкретный `ProjectService.create`,
+  даже если методов `create` несколько.
 - При неизвестном receiver граф **не размножается** по всем одноимённым методам;
   вызов остаётся неразрешённым до P3.
 - BFS: глобальный `visited` на handler, глубина ≤6, ≤50 outbound на handler.

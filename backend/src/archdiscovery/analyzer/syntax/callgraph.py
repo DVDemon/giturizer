@@ -38,6 +38,9 @@ GENERIC_EXTERNAL_METHODS = {
     "query": {"postgresql", "database"},
     "queryForObject": {"postgresql", "database"},
     "commit": {"postgresql", "database"},
+    "add": {"postgresql", "database"},
+    "refresh": {"postgresql", "database"},
+    "flush": {"postgresql", "database"},
     "fetchone": {"postgresql", "database"},
     "fetchall": {"postgresql", "database"},
     "send": {"kafka"},
@@ -91,20 +94,29 @@ def _method_key(method: dict[str, Any]) -> tuple[str, str | None, str]:
     return (method["file"], method.get("class"), method["name"])
 
 
-def _same_scope(
-    method: dict[str, Any], receiver: str | None, by_name: dict[str, list[dict[str, Any]]]
+def _targets_for(
+    call: dict[str, Any],
+    method: dict[str, Any],
+    by_name: dict[str, list[dict[str, Any]]],
 ) -> list[dict[str, Any]]:
-    candidates = by_name.get(method["name"], [])
+    name = _last(call["callee"])
+    candidates = by_name.get(name, [])
     if not candidates:
         return []
+    receiver = _receiver(call["callee"])
+    if receiver.startswith(("this.", "self.")):
+        receiver = receiver.split(".", 1)[1]
+    type_name = (method.get("types") or {}).get(receiver)
+    if type_name:
+        exact = [item for item in candidates if item.get("class") == type_name]
+        if exact:
+            return exact
     if receiver:
         exact = [item for item in candidates if item.get("class") == receiver]
         if exact:
             return exact
         if receiver in {"this", "self"}:
-            same_class = [item for item in candidates if item.get("class") == method.get("class")]
-            return same_class
-        # Неизвестный receiver: не размножаем граф по всем одноимённым методам.
+            return [item for item in candidates if item.get("class") == method.get("class")]
         return candidates if len(candidates) == 1 else []
     same_class = [item for item in candidates if item.get("class") == method.get("class")]
     return same_class or (candidates if len(candidates) == 1 else [])
@@ -119,10 +131,9 @@ def _external_kind(
     if _http_like(call):
         return "http"
     callee = call["callee"]
-    target_text = " ".join(
-        f"{item.get('class') or ''} {files_by_path.get(item['file'], {}).get('imports', [])}"
-        for item in targets
-    )
+    # Импорты чужого файла не делают любой вызов внешним: учитываем
+    # callee и имена target-классов (например, *Repository/*Client).
+    target_text = " ".join(str(item.get("class") or "") for item in targets)
     haystack = f"{callee} {target_text}"
     for kind, pattern in EXTERNAL_PATTERNS:
         if pattern.search(haystack):
@@ -180,14 +191,7 @@ def build_outbound_calls(
             if len(path) > MAX_DEPTH:
                 continue
             for call in calls_by_owner.get(_method_key(method), []):
-                targets = _same_scope(
-                    {
-                        "name": _last(call["callee"]),
-                        "class": method.get("class"),
-                    },
-                    _receiver(call["callee"]),
-                    by_name,
-                )
+                targets = _targets_for(call, method, by_name)
                 terminal_class = any(target.get("class") in client_classes for target in targets)
                 external_kind = _external_kind(
                     call,
