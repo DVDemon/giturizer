@@ -18,6 +18,40 @@ HTTP_CALL_MARKERS = (
     "httpservice",
     "superagent",
 )
+
+EXTERNAL_PATTERNS = (
+    ("redis", re.compile(r"(?i)(redis|jedis|lettuce|redisson|ioredis)")),
+    (
+        "postgresql",
+        re.compile(r"(?i)(postgres|psycopg|asyncpg|jdbc|jdbctemplate|r2dbc)"),
+    ),
+    ("s3", re.compile(r"(?i)(\bs3\b|boto3|aws-sdk/client-s3|minio)")),
+    ("rabbitmq", re.compile(r"(?i)(rabbit|pika|amqp|rabbittemplate)")),
+    ("kafka", re.compile(r"(?i)(kafka|kafkatemplate|confluent|kafkajs)")),
+    ("mongodb", re.compile(r"(?i)(mongo|mongotemplate)")),
+    ("elasticsearch", re.compile(r"(?i)(elasticsearch|opensearch)")),
+    ("database", re.compile(r"(?i)(sqlalchemy|datasource|repository)")),
+)
+
+GENERIC_EXTERNAL_METHODS = {
+    "execute": {"postgresql", "database"},
+    "query": {"postgresql", "database"},
+    "queryForObject": {"postgresql", "database"},
+    "commit": {"postgresql", "database"},
+    "fetchone": {"postgresql", "database"},
+    "fetchall": {"postgresql", "database"},
+    "send": {"kafka"},
+    "send_message": {"kafka"},
+    "publish": {"rabbitmq", "kafka"},
+    "basic_publish": {"rabbitmq"},
+    "consume": {"kafka", "rabbitmq"},
+    "get": {"redis"},
+    "set": {"redis"},
+    "hget": {"redis"},
+    "hset": {"redis"},
+    "put_object": {"s3"},
+    "get_object": {"s3"},
+}
 MAX_DEPTH = 6
 
 
@@ -76,6 +110,33 @@ def _same_scope(
     return same_class or (candidates if len(candidates) == 1 else [])
 
 
+def _external_kind(
+    call: dict[str, Any],
+    source_file: dict[str, Any],
+    targets: list[dict[str, Any]],
+    files_by_path: dict[str, dict[str, Any]],
+) -> str | None:
+    if _http_like(call):
+        return "http"
+    callee = call["callee"]
+    target_text = " ".join(
+        f"{item.get('class') or ''} {files_by_path.get(item['file'], {}).get('imports', [])}"
+        for item in targets
+    )
+    haystack = f"{callee} {target_text}"
+    for kind, pattern in EXTERNAL_PATTERNS:
+        if pattern.search(haystack):
+            return kind
+    method = _last(callee)
+    imports = " ".join(source_file.get("imports", []))
+    allowed = GENERIC_EXTERNAL_METHODS.get(method)
+    if allowed:
+        for kind, pattern in EXTERNAL_PATTERNS:
+            if kind in allowed and pattern.search(imports):
+                return kind
+    return None
+
+
 def build_outbound_calls(
     files: list[dict[str, Any]], handlers: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
@@ -91,6 +152,7 @@ def build_outbound_calls(
             calls_by_owner[owner].append(call)
 
     client_classes = _client_classes(files)
+    files_by_path = {item["file"]: item for item in files}
     outbound: list[dict[str, Any]] = []
 
     for handler in handlers:
@@ -127,7 +189,13 @@ def build_outbound_calls(
                     by_name,
                 )
                 terminal_class = any(target.get("class") in client_classes for target in targets)
-                if _http_like(call) or terminal_class:
+                external_kind = _external_kind(
+                    call,
+                    files_by_path.get(method["file"], {}),
+                    targets,
+                    files_by_path,
+                )
+                if external_kind is not None or terminal_class:
                     outbound_key: tuple[Any, ...] = (
                         call["file"],
                         call["line"],
@@ -158,9 +226,10 @@ def build_outbound_calls(
                                 "file": call["file"],
                                 "line": call["line"],
                                 "urls": call.get("urls", []),
-                                "kind": "http",
+                                "targets": call.get("literals", [])[:5],
+                                "kind": external_kind or "http",
                             },
-                            "confidence": 0.75 if call.get("urls") else 0.6,
+                            "confidence": 0.75 if call.get("urls") else 0.65,
                             "status": "partial",
                         }
                     )

@@ -184,9 +184,11 @@ def analyze_file(path: Path, repo: Path) -> dict[str, Any]:
                 }
             )
         if node.type in CALL_TYPES:
+            strings = _strings(node, source)
             urls: list[str] = []
-            for value in _strings(node, source):
+            for value in strings:
                 urls.extend(URL_RE.findall(value))
+            literals = [value.strip("'\"") for value in strings]
             name = _call_name(node, source)
             calls.append(
                 {
@@ -196,6 +198,7 @@ def analyze_file(path: Path, repo: Path) -> dict[str, Any]:
                     "caller": current_function or "",
                     "owner_class": current_class,
                     "urls": urls,
+                    "literals": literals,
                     "http_client_like": bool(HTTP_CLIENT_RE.search(name)),
                 }
             )

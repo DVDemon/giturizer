@@ -6,6 +6,8 @@
 
 - **UI/JSON: API-потоки** — массив `api_flows` в `/report` и отдельная вкладка
   «API-потоки»; вкладка скрывается без данных.
+- **API flow: не-HTTP внешние вызовы** — PostgreSQL, Redis, S3, RabbitMQ, Kafka,
+  MongoDB, Elasticsearch, SQL-репозитории; `output.kind`/`targets` в UI и JSON.
 - **P2: call graph handler → outbound HTTP-кандидат** для Java/TS/Python:
   Spring/Feign/RestTemplate, Nest/axios/fetch, FastAPI/httpx/requests;
   artifact `syntax.outbound_calls`, `GET /api/runs/{id}/outbound-calls`.

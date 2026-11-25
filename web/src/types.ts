@@ -188,6 +188,7 @@ export interface ApiFlow {
     file: string;
     line: number;
     urls: string[];
+    targets?: string[];
     kind: string;
   };
   confidence: number;

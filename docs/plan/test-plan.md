@@ -171,6 +171,7 @@ lint (ruff, black, mypy, eslint, tsc)
 - [ ] API/Deployment вкладки скрываются при отсутствии данных.
 - [ ] Tree-sitter: Spring/NestJS/FastAPI route + handler, Feign исключён, тесты/source ranges.
 - [ ] P2 call graph: handler → service → HTTP-клиент, лимиты глубины/outbound, без `fetchone`-ложных срабатываний.
+- [ ] Внешние вызовы: PostgreSQL/Redis/S3/RabbitMQ/Kafka/MongoDB классифицируются и видны в `api_flows`.
 - [ ] Все 5 языков дают хотя бы базовый результат.
 - [ ] Deployment-модель извлекается из всех 5 источников.
 - [ ] API извлекается из всех 4 групп источников.

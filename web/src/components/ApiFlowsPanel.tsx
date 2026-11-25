@@ -8,6 +8,22 @@ function basename(path: string): string {
   return path.split("/").pop() ?? path;
 }
 
+function kindLabel(kind: string): string {
+  const labels: Record<string, string> = {
+    http: "HTTP",
+    postgresql: "PostgreSQL",
+    redis: "Redis",
+    s3: "S3",
+    rabbitmq: "RabbitMQ",
+    kafka: "Kafka",
+    mongodb: "MongoDB",
+    elasticsearch: "Elasticsearch",
+    database: "База данных",
+    mysql: "MySQL",
+  };
+  return labels[kind] ?? kind;
+}
+
 export function ApiFlowsPanel({ flows }: { flows: ApiFlow[] }) {
   return (
     <div className="stack">
@@ -16,8 +32,9 @@ export function ApiFlowsPanel({ flows }: { flows: ApiFlow[] }) {
           <div>
             <h2>API-потоки</h2>
             <p className="muted">
-              Входная операция → цепочка вызовов → внешний HTTP-клиент. Это
-              кандидаты P2: внешняя операция и URL будут уточнены в P3.
+              Входная операция → цепочка вызовов → внешний вызов:
+              HTTP, PostgreSQL, Redis, S3, RabbitMQ, Kafka и др. Это
+              кандидаты P2: endpoint/операция будут уточнены в P3.
             </p>
           </div>
           <span className="badge">{flows.length}</span>
@@ -29,7 +46,7 @@ export function ApiFlowsPanel({ flows }: { flows: ApiFlow[] }) {
                 <th>Входная операция</th>
                 <th>Цепочка вызовов</th>
                 <th>Внешний вызов</th>
-                <th>URL</th>
+                <th>Endpoint / target</th>
                 <th>Confidence</th>
                 <th>Источник</th>
               </tr>
@@ -64,14 +81,19 @@ export function ApiFlowsPanel({ flows }: { flows: ApiFlow[] }) {
                   </td>
                   <td>
                     <code>{flow.output.callee}</code>
-                    <div className="flow-meta">{flow.output.kind}</div>
+                    <div className="flow-meta">{kindLabel(flow.output.kind)}</div>
                   </td>
                   <td>
-                    {flow.output.urls.length > 0 ? (
-                      flow.output.urls.map((url) => <div key={url} className="flow-url">{url}</div>)
-                    ) : (
-                      <span className="muted">URL не разрешён</span>
-                    )}
+                    {[...flow.output.urls, ...(flow.output.targets ?? [])]
+                      .filter((value, index, values) => values.indexOf(value) === index)
+                      .slice(0, 4)
+                      .map((value) => (
+                        <div key={value} className="flow-url">{value}</div>
+                      ))}
+                    {flow.output.urls.length === 0 &&
+                      (flow.output.targets ?? []).length === 0 && (
+                        <span className="muted">target не разрешён</span>
+                      )}
                   </td>
                   <td>
                     {percent(flow.confidence)}

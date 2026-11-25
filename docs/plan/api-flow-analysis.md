@@ -237,7 +237,7 @@ GET /api/runs/{id}/api-flows
 |---|---|---|---|
 | P0 | Spike Tree-sitter vs Doxygen; схема `ApiFlowEdge` | **Завершён** — [отчёт](api-flow-poc.md) | 2–3 дня |
 | P1 | Syntax index + route/handler detection (Java/TS/Python) | **Завершён** — artifact `syntax`, `/handlers` | 1–2 недели |
-| P2 | Call graph/resolver + client calls для Java/TS/Python | **Завершён** — `outbound_calls`, `/outbound-calls`, `api_flows` в отчёте и вкладка UI | 2–3 недели |
+| P2 | Call graph/resolver + client calls для Java/TS/Python | **Завершён** — HTTP + PostgreSQL/Redis/S3/RabbitMQ/Kafka; `outbound_calls`, `api_flows`, вкладка UI | 2–3 недели |
 | P3 | URL resolution + match с API-каталогом + confidence | `api_flows` | 1–2 недели |
 | P4 | JSONB/API/UI, тесты, фича-флаг | UI + endpoint | 1 неделя |
 | P5 | C#/Go/C++/Kotlin, стабилизация, удаление Doxygen после parity | multi-language | 2–4 недели |
@@ -245,6 +245,7 @@ GET /api/runs/{id}/api-flows
 Приоритет: Java (Spring/Feign) → TypeScript (Nest/axios) → Python (FastAPI/requests) → C#/Go → C++.
 
 P1 реализован: artifact `syntax`, `GET /api/runs/{id}/handlers`, ADR-0023.
+P2 включает внешние не-HTTP зависимости (ADR-0025).
 
 ## 8. Тестирование и приёмка
 
