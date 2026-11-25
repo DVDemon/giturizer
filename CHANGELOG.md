@@ -4,6 +4,9 @@
 
 ### Added
 
+- **P1: Tree-sitter syntax-index** для Java/TypeScript/Python: endpoint → handler,
+  artifact `syntax`, `GET /api/runs/{id}/handlers`; Spring/NestJS/Express/FastAPI/Flask.
+  Зависимости ставятся только в образ `analyzer` (extra `syntax`).
 - **C4 container diagram через Graphviz**: DOT из внутренней C4-модели, engine `fdp`,
   endpoint `/api/runs/{id}/c4.svg`, переключатель Graphviz/Mermaid и масштаб в UI.
   Внешние системы фильтруются по связям с контейнерами и дедуплицируются по имени.

@@ -73,3 +73,38 @@ def stub_archguard_dispatch(monkeypatch):
         "archdiscovery.services.pipeline.dispatch_archguard_analyzer",
         lambda *args, **kwargs: ARCHGUARD_STUB,
     )
+
+
+SYNTAX_STUB = {
+    "tool": "tree-sitter",
+    "version": "0.27.0",
+    "languages": ["java"],
+    "handlers": [
+        {
+            "method": "GET",
+            "path": "/users",
+            "handler": {
+                "file": "api/UserController.java",
+                "line": 3,
+                "symbol": "users",
+                "class": "UserController",
+                "language": "java",
+                "framework": "Spring",
+            },
+            "source": {"file": "api/UserController.java", "line": 3},
+            "framework": "Spring",
+            "confidence": 0.95,
+        }
+    ],
+    "stats": {"files": 1, "handlers": 1, "languages": ["java"]},
+    "errors": [],
+}
+
+
+@pytest.fixture(autouse=True)
+def stub_syntax_dispatch(monkeypatch):
+    """Не ходим в Celery/Tree-sitter из юнит-тестов пайплайна."""
+    monkeypatch.setattr(
+        "archdiscovery.services.pipeline.dispatch_syntax_analyzer",
+        lambda *args, **kwargs: SYNTAX_STUB,
+    )

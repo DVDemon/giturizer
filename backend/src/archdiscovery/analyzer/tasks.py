@@ -24,3 +24,16 @@ def analyze_archguard_task(repo_path: str, output_path: str, languages: list[str
     """ArchGuard scanner по языкам; пишет сводный JSON в общий volume."""
     result = analyze_archguard(Path(repo_path), Path(output_path), languages)
     return {"output_path": output_path, "summary": result["summary"], "errors": result["errors"]}
+
+
+@shared_task(name="analyzer.syntax")
+def analyze_syntax_task(repo_path: str, output_path: str, languages: list[str]) -> dict:
+    """Tree-sitter syntax-index: endpoint → handler."""
+    from archdiscovery.analyzer.syntax.analyze import analyze_syntax
+
+    result = analyze_syntax(Path(repo_path), Path(output_path), languages)
+    return {
+        "output_path": output_path,
+        "stats": result["stats"],
+        "errors": result["errors"],
+    }

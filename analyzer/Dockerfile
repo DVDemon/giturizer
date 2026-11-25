@@ -33,6 +33,6 @@ RUN mkdir -p /opt/archguard/analysers \
 
 COPY backend/pyproject.toml ./
 COPY backend/src ./src
-RUN pip install .
+RUN pip install ".[syntax]"
 
 CMD ["celery", "-A", "archdiscovery.analyzer.celery_app.celery_app", "worker", "-Q", "analyzers", "--loglevel=INFO"]

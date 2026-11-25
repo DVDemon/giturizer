@@ -85,6 +85,7 @@ make smoke
 | GET | `/api/projects/{id}/runs` | запуски проекта |
 | GET | `/api/runs/{id}/results` | технологии, API, deployment, артефакты анализа |
 | GET | `/api/runs/{id}/report` | единый JSON-отчёт (`technologies`, `api`, `deployment`) |
+| GET | `/api/runs/{id}/handlers` | endpoint → handler (Tree-sitter syntax-index) |
 | GET | `/api/runs/{id}/report?download=true` | скачать отчёт как файл |
 | GET | `/api/runs/{id}/c4.model` | минимальная C4-модель для Mermaid |
 | GET | `/api/runs/{id}/c4.svg` | C4 container diagram (Graphviz `fdp`, SVG) |
@@ -112,7 +113,8 @@ make smoke
    `.nvmrc`/`.python-version`/`.java-version`.
 3. Ставит анализаторы в очередь `analyzers` (контейнер `analyzer`): ArchGuard по языкам
    (Java/Kotlin/C#/TS/Python/Golang) и C++ (doxygen + include-граф).
-4. Извлекает API (OpenAPI, gRPC, GraphQL, аннотации фреймворков) и модель развёртывания
+4. Строит Tree-sitter syntax-index (Java/TS/Python) для endpoint → handler,
+   извлекает API (OpenAPI, gRPC, GraphQL, аннотации фреймворков) и модель развёртывания
    (compose, Dockerfile, Kubernetes, Helm, ArgoCD, GitLab CI) со сводкой.
 5. Собирает единый JSON-отчёт: технологии, сервисы API с методами и deployment.
 6. Сохраняет отчёт и внутреннюю C4-модель в PostgreSQL.
@@ -148,7 +150,7 @@ make typecheck   # mypy
 |--------|------------|
 | `api` | FastAPI, REST API, health-check |
 | `worker` | Celery-воркер очереди `pipeline` (оркестрация) |
-| `analyzer` | Celery-воркер очереди `analyzers` (инструменты анализа) |
+| `analyzer` | Celery-воркер очереди `analyzers` (Tree-sitter, ArchGuard, doxygen) |
 | `web` | React/TS SPA (заглушка на P0) |
 | `postgres` | PostgreSQL 16 — метаданные и артефакты |
 | `redis` | Redis 7 — брокер очередей |

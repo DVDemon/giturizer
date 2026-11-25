@@ -1,6 +1,6 @@
 # План: анализ API-потоков (input API → external API)
 
-- **Статус:** P0 завершён; P1 — следующий этап
+- **Статус:** P0/P1 завершены; P2 — следующий этап
 - **Дата:** 2026-11-25
 - **Связанные ADR:** [0007](../adr/0007-api-sources.md), [0018](../adr/0018-api-catalog.md), [0021](../adr/0021-json-report.md)
 
@@ -236,13 +236,15 @@ GET /api/runs/{id}/api-flows
 | Этап | Работы | Результат | Оценка |
 |---|---|---|---|
 | P0 | Spike Tree-sitter vs Doxygen; схема `ApiFlowEdge` | **Завершён** — [отчёт](api-flow-poc.md) | 2–3 дня |
-| P1 | Syntax index + route/handler detection (Java/TS/Python) | endpoint → handler | 1–2 недели |
+| P1 | Syntax index + route/handler detection (Java/TS/Python) | **Завершён** — artifact `syntax`, `/handlers` | 1–2 недели |
 | P2 | Call graph/resolver + client calls для Java/TS/Python | handler → outbound calls | 2–3 недели |
 | P3 | URL resolution + match с API-каталогом + confidence | `api_flows` | 1–2 недели |
 | P4 | JSONB/API/UI, тесты, фича-флаг | UI + endpoint | 1 неделя |
 | P5 | C#/Go/C++/Kotlin, стабилизация, удаление Doxygen после parity | multi-language | 2–4 недели |
 
 Приоритет: Java (Spring/Feign) → TypeScript (Nest/axios) → Python (FastAPI/requests) → C#/Go → C++.
+
+P1 реализован: artifact `syntax`, `GET /api/runs/{id}/handlers`, ADR-0023.
 
 ## 8. Тестирование и приёмка
 

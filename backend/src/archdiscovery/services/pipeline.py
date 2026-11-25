@@ -22,6 +22,7 @@ from archdiscovery.pipeline.deployment_extract import extract_deployment
 from archdiscovery.pipeline.dispatch import (
     dispatch_archguard_analyzer,
     dispatch_cpp_analyzer,
+    dispatch_syntax_analyzer,
 )
 from archdiscovery.pipeline.graphql_extract import extract_graphql_specs
 from archdiscovery.pipeline.grpc_extract import extract_grpc_specs
@@ -39,6 +40,13 @@ from archdiscovery.vcs.clone import clone_repository, detect_default_branch
 CloneFn = Callable[[str, str, str | None, Path], str]
 DispatchFn = Callable[[Path, Path], dict]
 ArchguardDispatchFn = Callable[[Path, Path, list[str]], dict]
+SyntaxDispatchFn = Callable[[Path, Path, list[str]], dict]
+
+SYNTAX_LANGUAGES = {
+    "Java": "java",
+    "JavaScript/TypeScript": "typescript",
+    "Python": "python",
+}
 
 ARCHGUARD_LANGUAGES = {
     "Java": "Java",
@@ -82,6 +90,7 @@ def execute_run(
     clone: CloneFn = clone_repository,
     dispatch: DispatchFn = dispatch_cpp_analyzer,
     archguard_dispatch: ArchguardDispatchFn | None = None,
+    syntax_dispatch: SyntaxDispatchFn | None = None,
     keep_repos: bool | None = None,
 ) -> AnalysisRun | None:
     """Клон → детект → анализаторы → API/deployment → JSON-отчёт/C4."""
@@ -132,6 +141,29 @@ def execute_run(
             progress=30,
             technologies_count=len(technologies),
         )
+
+        syntax_languages = sorted(
+            {
+                SYNTAX_LANGUAGES[name]
+                for name in {technology.name for technology in technologies}
+                if name in SYNTAX_LANGUAGES
+            }
+        )
+        if syntax_languages:
+            try:
+                dispatcher = syntax_dispatch or dispatch_syntax_analyzer
+                syntax_artifact = dispatcher(repo_path, artifacts_dir, syntax_languages)
+                session.add(
+                    RunArtifact(
+                        run_id=run.id,
+                        kind="syntax",
+                        path=str(artifacts_dir / "syntax.json"),
+                        content=syntax_artifact,
+                    )
+                )
+                session.commit()
+            except Exception as exc:  # noqa: BLE001 - сбой инструмента не валит пайплайн
+                warnings.append(f"syntax analyzer: {exc}")
 
         cpp_artifact: dict | None = None
         if any(technology.name == "C++" for technology in technologies):

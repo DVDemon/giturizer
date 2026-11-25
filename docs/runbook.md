@@ -135,6 +135,7 @@ docker run --rm -v archdiscovery_data:/data -v "$PWD":/backup alpine \
 | C4 `503 graphviz unavailable` | пересоберите `api` (`graphviz`/`fdp` в образе), проверьте `docker compose exec api fdp -V` |
 | C4 пустая/мелкая | откройте `GET /api/runs/{id}/c4.svg`, используйте масштаб 150–200%; Mermaid — как fallback |
 | JSON-отчёт пустой/404 | проверьте `GET /api/runs/{id}/report`; для старых запусков отчёт собирается лениво, для новых — на этапе analysis; логи `worker` |
+| `/handlers` пустой | artifact `syntax` в `/results`; проверьте языки (Java/TS/Python), логи `analyzer`, наличие Tree-sitter в образе (`pip show tree-sitter-language-pack`) |
 | Порт занят | измените `API_PORT`/`WEB_PORT` в `.env` |
 | Очередь растёт | масштабируйте `worker`/`analyzer`, проверьте Redis |
 | Мало места | очистка артефактов (см. §6), `docker system prune` |

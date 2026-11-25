@@ -84,6 +84,17 @@ print("technologies:", len(data["technologies"]),
       "| artifacts:", [item["kind"] for item in data["artifacts"]])
 PY
 
+log "handlers"
+curl -fsS "$API_URL/api/runs/$RUN_ID/handlers" -o /tmp/smoke-handlers.json \
+  || fail "handlers endpoint"
+python3 - <<'PY'
+import json
+
+data = json.load(open("/tmp/smoke-handlers.json"))
+assert "handlers" in data
+print("available:", data.get("available"), "| handlers:", len(data["handlers"]))
+PY
+
 log "c4"
 curl -fsS "$API_URL/api/runs/$RUN_ID/c4.model" >/dev/null || fail "c4 model"
 curl -fsS "$API_URL/api/runs/$RUN_ID/c4.svg" -o /tmp/smoke-c4.svg || fail "c4 svg"

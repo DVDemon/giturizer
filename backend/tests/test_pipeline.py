@@ -104,7 +104,7 @@ def test_execute_run_persists_results(tmp_path: Path, session: Session) -> None:
     assert deployment.model["compose"]
 
     artifacts = session.scalars(select(RunArtifact).where(RunArtifact.run_id == run.id)).all()
-    assert {artifact.kind for artifact in artifacts} == {"cpp", "archguard"}
+    assert {artifact.kind for artifact in artifacts} == {"cpp", "archguard", "syntax"}
     assert run.stage == "done"
     assert run.progress == 100
     assert run.technologies_count >= 1

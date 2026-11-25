@@ -38,3 +38,22 @@ def dispatch_archguard_analyzer(
     if not output.exists():
         raise RuntimeError("ArchGuard analyzer produced no output")
     return json.loads(output.read_text(encoding="utf-8"))
+
+
+def dispatch_syntax_analyzer(
+    repo_path: Path,
+    artifacts_dir: Path,
+    languages: list[str],
+    timeout: int | None = None,
+) -> dict:
+    """Ставит Tree-sitter syntax-index в очередь analyzers и ждёт результат."""
+    output = artifacts_dir / "syntax.json"
+    async_result = celery_app.send_task(
+        "analyzer.syntax",
+        args=[str(repo_path), str(output), list(languages)],
+        queue="analyzers",
+    )
+    async_result.get(timeout=timeout or settings.analyzer_timeout, disable_sync_subtasks=False)
+    if not output.exists():
+        raise RuntimeError("syntax analyzer produced no output")
+    return json.loads(output.read_text(encoding="utf-8"))

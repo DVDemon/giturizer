@@ -38,7 +38,7 @@
 | 11 | Связь worker ↔ analyzer | Общая очередь + shared volume (без docker.sock) | Принято |
 | 12 | Доступ к GitLab/GitHub | access token (опционально) | Принято |
 | 13 | Провайдеры | GitHub (public) + GitLab, авто-ветка | Принято |
-| 14 | Анализатор | ArchGuard scanner (Java/Kotlin/C#/TS/Python/Golang) + C++ (doxygen), submodules | Принято |
+| 14 | Анализатор | Tree-sitter syntax-index + ArchGuard scanner + C++ (doxygen), submodules | Принято |
 
 Полный реестр — в [`docs/adr/README.md`](adr/README.md).
 
@@ -50,7 +50,7 @@ flowchart LR
     W --> G[GitHub / GitLab (источник кода)]
     W --> R[Реестры Docker-образов]
     W --> D[PostgreSQL + Redis]
-    W --> A[Анализаторы: ArchGuard, doxygen, pyan, dependency-cruiser, ...]
+    W --> A[Анализаторы: Tree-sitter, ArchGuard, doxygen, pyan, ...]
 ```
 
 - **Пользователь** — архитектор/разработчик, вводит URL проекта, просматривает результаты.
@@ -82,7 +82,7 @@ flowchart TB
 | `web` | React + TypeScript (Vite), unprivileged nginx | SPA: ввод URL, список проектов/запусков, визуализация |
 | `api` | Python + FastAPI + Graphviz | REST API, CRUD проектов/запусков, постановка задач, отдача результатов, C4 SVG (`fdp`) |
 | `worker` | Python + Celery | Оркестрирует пайплайн (клон, детект, merge, persist), ставит задачи анализа в очередь |
-| `analyzer` | Python + Celery + Java 21 + инструменты анализа | Долгоживущий воркер очереди `analyzers`: ArchGuard scanner, doxygen, pyan, dependency-cruiser |
+| `analyzer` | Python + Celery + Java 21 + Tree-sitter + инструменты анализа | Долгоживущий воркер очереди `analyzers`: Tree-sitter syntax-index, ArchGuard scanner, doxygen, pyan |
 | `postgres` | PostgreSQL 16 | Метаданные + JSON-отчёты + внутренняя C4-модель |
 | `redis` | Redis 7 | Брокер очереди + кэш статусов |
 
@@ -135,6 +135,7 @@ flowchart LR
    `package.json`). Формирует первичный реестр технологий.
 4. **Language analysis** — по обнаруженным языкам `worker` последовательно ставит задачи в очередь
    `analyzers`; контейнер `analyzer` выполняет соответствующие инструменты над клоном:
+   - Java / TypeScript / Python → **Tree-sitter syntax-index** (endpoint → handler, source ranges);
    - Java / Kotlin / C# / TS/JS / Python / Go → **ArchGuard scanner** (Java-фичи apicalls/datamap:
      services map, API, database map; классы и модули). Анализаторы предзагружены в образ,
      каждый язык запускается независимо: ошибка языка фиксируется и не валит остальные;
@@ -196,7 +197,7 @@ architecture_snapshots(id, project_id, run_id, dsl text, workspace jsonb,
 api_specs(id, project_id, run_id, kind, name, spec jsonb)      -- openapi|grpc|graphql|annotations
 tech_registry(id, project_id, run_id, technologies jsonb)      -- языки, фреймворки, библиотеки, версии
 deployment_models(id, project_id, run_id, model jsonb)         -- nodes + relationships
-artifacts(id, run_id, kind, path, content bytea/text)          -- dsl, openapi.yaml, raw outputs
+artifacts(id, run_id, kind, path, content bytea/text)          -- syntax.json, cpp, archguard, raw outputs
 ```
 
 - **Граф архитектуры** (elements + relationships) хранится внутри `architecture_snapshots.workspace`
