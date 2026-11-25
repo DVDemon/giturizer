@@ -56,19 +56,20 @@ while :; do
   sleep 2
 done
 
-log "structurizr"
-curl -fsS "$API_URL/api/runs/$RUN_ID/structurizr" -o /tmp/smoke-structurizr.json \
-  || fail "structurizr endpoint"
+log "report"
+curl -fsS "$API_URL/api/runs/$RUN_ID/report" -o /tmp/smoke-report.json \
+  || fail "report endpoint"
 python3 - <<'PY'
 import json
 
-data = json.load(open("/tmp/smoke-structurizr.json"))
-assert data["dsl"].startswith("workspace "), "dsl is empty"
-workspace = data["workspace"]
-assert workspace["name"], "workspace name is empty"
-print("workspace:", workspace["name"],
-      "| systems:", len(workspace["model"]["softwareSystems"]),
-      "| relationships:", len(workspace["model"]["relationships"]))
+data = json.load(open("/tmp/smoke-report.json"))
+assert set(data) == {"technologies", "api", "deployment"}, data.keys()
+assert isinstance(data["technologies"], list)
+assert isinstance(data["api"], list)
+assert isinstance(data["deployment"], list)
+print("technologies:", len(data["technologies"]),
+      "| api services:", len(data["api"]),
+      "| deployment methods:", [item["method"] for item in data["deployment"]])
 PY
 
 log "results"
@@ -83,11 +84,8 @@ print("technologies:", len(data["technologies"]),
       "| artifacts:", [item["kind"] for item in data["artifacts"]])
 PY
 
-log "graph"
-curl -fsS "$API_URL/api/runs/$RUN_ID/graph/elements" >/dev/null || fail "graph elements"
-curl -fsS "$API_URL/api/runs/$RUN_ID/structurizr.dsl" >/dev/null || fail "dsl download"
-
 log "c4"
+curl -fsS "$API_URL/api/runs/$RUN_ID/c4.model" >/dev/null || fail "c4 model"
 curl -fsS "$API_URL/api/runs/$RUN_ID/c4.svg" -o /tmp/smoke-c4.svg || fail "c4 svg"
 grep -q '<svg' /tmp/smoke-c4.svg || fail "c4 svg is empty"
 

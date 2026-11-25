@@ -97,7 +97,69 @@ export interface RunResults {
   artifacts: Artifact[];
 }
 
-export interface StructurizrArtifact {
-  dsl: string;
-  workspace: Record<string, unknown>;
+export interface C4Component {
+  id: string;
+  name: string;
+}
+
+export interface C4Container {
+  id: string;
+  name: string;
+  technology?: string;
+  components?: C4Component[];
+}
+
+export interface C4System {
+  id: string;
+  name: string;
+  technology?: string;
+  containers?: C4Container[];
+}
+
+export interface C4Relationship {
+  sourceId: string;
+  destinationId: string;
+  description?: string;
+}
+
+export interface C4Model {
+  softwareSystems: C4System[];
+  relationships: C4Relationship[];
+}
+
+export interface ReportTechnology {
+  name: string;
+  type: string;
+  version: string | null;
+  description: string;
+}
+
+export interface ReportMethod {
+  operation: string;
+  description: string;
+  technology: string;
+}
+
+export interface ReportApiService {
+  service: string;
+  methods: ReportMethod[];
+}
+
+export interface ReportDeploymentService {
+  name: string;
+  image: string | null;
+  image_version: string | null;
+  ports: string[];
+  dependencies: string[];
+}
+
+export interface ReportDeployment {
+  method: string;
+  services: ReportDeploymentService[];
+}
+
+export interface RunReport {
+  technologies: ReportTechnology[];
+  api: ReportApiService[];
+  deployment: ReportDeployment[];
 }

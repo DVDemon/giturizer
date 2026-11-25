@@ -1,7 +1,7 @@
 # ArchDiscovery
 
 Сервис анализа архитектуры: по URL репозитория GitHub или GitLab выгружает код, восстанавливает архитектуру
-(связи, API, технологии, deployment) и отдаёт результат в формате Structurizr (DSL + JSON).
+(связи, API, технологии, deployment) и отдаёт единый JSON-отчёт: технологии, API и deployment.
 
 - Архитектура: [docs/architecture.md](docs/architecture.md)
 - Решения (ADR): [docs/adr/README.md](docs/adr/README.md)
@@ -12,7 +12,7 @@
 
 **v1.0** — все фазы P0–P7 реализованы: каркас и CI, проекты/запуски, клон с submodules и анализаторы (ArchGuard + C++),
 извлечение API (OpenAPI/gRPC/GraphQL/аннотации) и deployment (compose/Dockerfile/k8s/Helm/ArgoCD/
-GitLab CI) с версиями технологий, Structurizr DSL/JSON + граф в Neo4j, C4 Graphviz, API-каталог,
+GitLab CI) с версиями технологий, единый JSON-отчёт, C4 Graphviz, API-каталог,
 пагинация/прогресс запусков и веб-интерфейс.
 Добавлены хардненинг (cap_drop/no-new-privileges, unprivileged nginx, шифрование токенов,
 очистка клонов) и runbook.
@@ -43,6 +43,10 @@ make smoke
   прогресс-бар, длительность, счётчики технологий/сервисов/API. Для активного
   запуска данные обновляются каждые 2.5 с; после завершения доступны вкладки:
   **Обзор**, **C4**, **API**, **Технологии**, **Deployment**.
+  После завершения анализа верхняя плашка с прогрессом скрывается — остаются URL,
+  статус и вкладки.
+  **Обзор** — статистика запуска и раскрывающееся JSON-дерево отчёта с кнопкой
+  «Скачать JSON».
   **C4** — container-диаграмма Graphviz (fdp) с масштабом и SVG-экспортом;
   переключатель на Mermaid сохранён.
   **API** — каталог всех операций: поиск, фильтры по сервису/методу/источнику,
@@ -57,7 +61,7 @@ make smoke
 
 ![Проекты](docs/assets/ui-projects.png)
 
-![Сканирование](docs/assets/ui-scan.png)
+![Сканирование и JSON-отчёт](docs/assets/ui-report-overview.png)
 
 ![Технологии](docs/assets/ui-tech.png)
 
@@ -78,15 +82,23 @@ make smoke
 | GET | `/api/runs/{id}` | статус запуска |
 | GET | `/api/projects/{id}/runs` | запуски проекта |
 | GET | `/api/runs/{id}/results` | технологии, API, deployment, артефакты анализа |
-| GET | `/api/runs/{id}/structurizr` | DSL + JSON workspace |
-| GET | `/api/runs/{id}/structurizr.dsl` | скачать `workspace.dsl` |
-| GET | `/api/runs/{id}/structurizr.json` | скачать `workspace.json` |
+| GET | `/api/runs/{id}/report` | единый JSON-отчёт (`technologies`, `api`, `deployment`) |
+| GET | `/api/runs/{id}/report?download=true` | скачать отчёт как файл |
+| GET | `/api/runs/{id}/c4.model` | минимальная C4-модель для Mermaid |
 | GET | `/api/runs/{id}/c4.svg` | C4 container diagram (Graphviz `fdp`, SVG) |
-| GET | `/api/runs/{id}/graph/elements` | элементы графа из Neo4j |
-| GET | `/api/runs/{id}/graph/dependencies?element_id=&depth=` | транзитивные зависимости (Cypher) |
 
 Публичные репозитории GitHub/GitLab клонируются без токена; ветка необязательна —
 если не указана, сервис определяет её по умолчанию (`main`, `master`, …) и запоминает в проекте.
+
+Формат отчёта:
+
+```json
+{
+  "technologies": [{"name": "Spring Boot", "type": "framework", "version": "3.3.0", "description": "pom.xml"}],
+  "api": [{"service": "products-service", "methods": [{"operation": "GET /products", "description": "...", "technology": "OpenAPI"}]}],
+  "deployment": [{"method": "Docker Compose", "services": [{"name": "api", "image": "nginx", "image_version": "1.25", "ports": ["8080:80"], "dependencies": ["db"]}]}]
+}
+```
 
 ### Что делает пайплайн
 
@@ -100,8 +112,8 @@ make smoke
    (Java/Kotlin/C#/TS/Python/Golang) и C++ (doxygen + include-граф).
 4. Извлекает API (OpenAPI, gRPC, GraphQL, аннотации фреймворков) и модель развёртывания
    (compose, Dockerfile, Kubernetes, Helm, ArgoCD, GitLab CI) со сводкой.
-5. Строит C4-модель, генерирует Structurizr `workspace.dsl` + `workspace.json`, валидирует их.
-6. Сохраняет снапшот в PostgreSQL и идемпотентно пишет граф в Neo4j.
+5. Собирает единый JSON-отчёт: технологии, сервисы API с методами и deployment.
+6. Сохраняет отчёт и внутреннюю C4-модель в PostgreSQL, идемпотентно пишет граф в Neo4j.
 
 ## Быстрый старт
 

@@ -145,6 +145,7 @@ class ArchitectureSnapshot(Base):
     )
     dsl: Mapped[str] = mapped_column(Text, nullable=False)
     workspace: Mapped[dict] = mapped_column(JSONType, nullable=False)
+    report: Mapped[dict | None] = mapped_column(JSONType, nullable=True)
     generated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

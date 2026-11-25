@@ -1,9 +1,10 @@
 import type {
+  C4Model,
   PagedProjects,
   Project,
   Run,
   RunResults,
-  StructurizrArtifact,
+  RunReport,
 } from "./types";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -79,12 +80,14 @@ export const api = {
 
   results: (runId: string) =>
     request<RunResults>(`/api/runs/${runId}/results`),
-  structurizr: (runId: string) =>
-    request<StructurizrArtifact>(`/api/runs/${runId}/structurizr`),
+  c4Model: (runId: string) =>
+    request<C4Model>(`/api/runs/${runId}/c4.model`),
+  report: (runId: string) =>
+    request<RunReport>(`/api/runs/${runId}/report`),
 };
 
-export function structurizrDownloadUrl(runId: string, format: "dsl" | "json") {
-  return `/api/runs/${runId}/structurizr.${format}`;
+export function reportDownloadUrl(runId: string) {
+  return `/api/runs/${runId}/report?download=true`;
 }
 
 export function downloadJson(filename: string, data: unknown) {

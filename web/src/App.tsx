@@ -87,7 +87,7 @@ export default function App() {
           <div>
             <h1>ArchDiscovery</h1>
             <p className="subtitle">
-              Архитектура из кода GitHub/GitLab · Structurizr + Neo4j
+              Архитектура из кода GitHub/GitLab · C4 + JSON
             </p>
           </div>
         </div>

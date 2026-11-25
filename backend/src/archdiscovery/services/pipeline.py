@@ -28,6 +28,7 @@ from archdiscovery.pipeline.graphql_extract import extract_graphql_specs
 from archdiscovery.pipeline.grpc_extract import extract_grpc_specs
 from archdiscovery.pipeline.model import ArchitectureModel, build_model
 from archdiscovery.pipeline.openapi_extract import extract_openapi_specs
+from archdiscovery.pipeline.report import build_report
 from archdiscovery.pipeline.structurizr import (
     generate_dsl,
     generate_json,
@@ -87,7 +88,7 @@ def execute_run(
     graph_writer: GraphWriter | None = write_graph,
     keep_repos: bool | None = None,
 ) -> AnalysisRun | None:
-    """Клон → детект → анализаторы → API/deployment → Structurizr → Neo4j."""
+    """Клон → детект → анализаторы → API/deployment → JSON-отчёт/C4 → Neo4j."""
     run = session.get(AnalysisRun, run_id)
     if run is None:
         return None
@@ -217,19 +218,25 @@ def execute_run(
         _advance(
             session,
             run,
-            stage="structurizr",
+            stage="report",
             progress=90,
             services_count=services_count,
         )
         workspace = generate_json(model)
         validate_workspace(workspace)
         dsl = generate_dsl(model)
+        report = build_report(
+            technologies=tech_payload,
+            api_specs=specs,
+            deployment=deployment,
+        )
         session.add(
             ArchitectureSnapshot(
                 project_id=project.id,
                 run_id=run.id,
                 dsl=dsl,
                 workspace=workspace,
+                report=report,
             )
         )
         session.commit()

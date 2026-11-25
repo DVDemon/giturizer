@@ -4,12 +4,15 @@
 
 ### Added
 
-- **C4 container diagram через Graphviz**: DOT из Structurizr-модели, engine `fdp`,
+- **C4 container diagram через Graphviz**: DOT из внутренней C4-модели, engine `fdp`,
   endpoint `/api/runs/{id}/c4.svg`, переключатель Graphviz/Mermaid и масштаб в UI.
   Внешние системы фильтруются по связям с контейнерами и дедуплицируются по имени.
-- **Граф: ForceAtlas2** (`graphology-layout-forceatlas2`) вместо breadthfirst;
-  узлы перетаскиваются, после отпускания связанные пересчитываются ForceAtlas2;
-  кнопки «Вписать»/«Пересчитать»; легенда технологий над графом убрана.
+- **Единый JSON-отчёт** (`/api/runs/{id}/report`): `technologies`, `api`
+  (сервисы → методы), `deployment` (способ → сервисы: образ/версия/порты/зависимости).
+  Хранится в `architecture_snapshots.report` (миграция 0007), для старых запусков
+  собирается лениво.
+- **Обзор**: после завершения анализа верхняя плашка скрывается, остаются URL и
+  статус; в «Обзоре» — статистика запуска, JSON-дерево и скачивание отчёта.
 - **API-каталог**: все операции из OpenAPI/annotations/gRPC/GraphQL в одной таблице
   с поиском, фильтрами по сервису/методу/источнику, пагинацией и панелью деталей
   (параметры, body, ответы, схемы). Deep link через `?api=&op=`, Redoc удалён.
@@ -30,10 +33,17 @@
 - Fallback-скан JS/TS (файлы и локальные импорты) для модулей, не покрытых ArchGuard;
   покрытие submodules считается по ArchGuard + fallback.
 
+### Changed
+
+- Публичный вывод Structurizr (`workspace.dsl`/`workspace.json`) и API `/structurizr*`
+  удалены; Structurizr-модель остаётся только внутренней для C4.
+
 ### Removed
 
 - Интерактивный граф (вкладка «Граф», ForceAtlas2, Cytoscape/graphology) убран
-  из карточек систем. Данные графа по-прежнему доступны через Neo4j API.
+  из карточек систем; публичные `/graph/*` API удалены, Neo4j остаётся внутренним.
+- Удалены лишние API: `/structurizr`, `/structurizr.dsl`, `/structurizr.json`,
+  `/graph/elements`, `/graph/dependencies`.
 
 ### Fixed
 

@@ -5,8 +5,8 @@
 Сервис принимает на вход URL репозитория GitHub или GitLab (публичного или с токеном),
 выгружает и анализирует его исходный код,
 и восстанавливает архитектуру: связи между компонентами/сервисами, API, технологии и библиотеки,
-а также модель развёртывания. Канонический результат — рабочее пространство в формате **Structurizr**
-(DSL + JSON), плюс спецификации API и реестр технологий.
+а также модель развёртывания. Канонический результат — **единый JSON-отчёт**:
+`technologies`, `api` (сервисы → методы) и `deployment` (способ → сервисы).
 
 ## 1. Цель и назначение
 
@@ -19,7 +19,7 @@
   Kubernetes, Helm, ArgoCD, GitLab CI).
 - Сгенерировать спецификации API (OpenAPI, gRPC, GraphQL, аннотации фреймворков).
 - Сформировать реестр технологий и библиотек.
-- Отдать результат в формате Structurizr (DSL + JSON workspace) и визуализировать в вебе.
+- Отдать единый JSON-отчёт и визуализировать C4/API/технологии/deployment в вебе.
 
 ## 2. Ключевые архитектурные решения (кратко)
 
@@ -33,7 +33,7 @@
 | 6 | Источники развёртывания | Dockerfile/compose, k8s, Helm, ArgoCD, GitLab CI | Принято |
 | 7 | Источники API | OpenAPI, gRPC/protobuf, GraphQL, аннотации фреймворков | Принято |
 | 8 | Аутентификация | Одиночный пользователь / внутренний | Принято |
-| 9 | Формат Structurizr | DSL + JSON (оба) | Принято |
+| 9 | Формат результата | единый JSON-отчёт (technologies/api/deployment) | Принято |
 | 10 | Хранение графа | Neo4j | Принято |
 | 11 | Связь worker ↔ analyzer | Общая очередь + shared volume (без docker.sock) | Принято |
 | 12 | Доступ к GitLab/GitHub | access token (опционально) | Принято |
@@ -85,7 +85,7 @@ flowchart TB
 | `api` | Python + FastAPI + Graphviz | REST API, CRUD проектов/запусков, постановка задач, отдача результатов, C4 SVG (`fdp`) |
 | `worker` | Python + Celery | Оркестрирует пайплайн (клон, детект, merge, persist), ставит задачи анализа в очередь |
 | `analyzer` | Python + Celery + Java 21 + инструменты анализа | Долгоживущий воркер очереди `analyzers`: ArchGuard scanner, doxygen, pyan, dependency-cruiser |
-| `postgres` | PostgreSQL 16 | Метаданные + снапшоты Structurizr + артефакты |
+| `postgres` | PostgreSQL 16 | Метаданные + JSON-отчёты + внутренняя C4-модель |
 | `neo4j` | Neo4j 5 | Граф архитектуры: элементы, связи, транзитивные запросы |
 | `redis` | Redis 7 | Брокер очереди + кэш статусов |
 
@@ -111,15 +111,16 @@ flowchart LR
         W4[ApiExtractor]
         W5[DeploymentExtractor]
         W6[ModelMerger]
-        W7[StructurizrGenerator]
-        W8[Persister]
+        W7[C4ModelBuilder]
+        W8[ReportBuilder]
+        W9[Persister]
     end
     subgraph analyzer
         N1[Analyzer Consumer] --> N2[Tool Runners]
     end
     A4 -->|publish| RD[(redis)]
     RD --> W1
-    W1 --> W2 --> W3 --> W4 --> W5 --> W6 --> W7 --> W8
+    W1 --> W2 --> W3 --> W4 --> W5 --> W6 --> W7 --> W8 --> W9
     W3 -->|задачи analyzers| RD
     RD --> N1
 ```
@@ -151,10 +152,11 @@ flowchart LR
 6. **Deployment extraction** — извлекает модель развёртывания (см. §7).
 7. **Merge** — сводит результаты в единую внутреннюю модель архитектуры (граф элементов и связей
    в терминах C4 + deployment nodes + API + реестр технологий).
-8. **Structurizr generation** — сериализует модель в Structurizr workspace (DSL + JSON).
-9. **Persist** — пишет метаданные/снапшот в PostgreSQL, граф — в Neo4j (`MERGE` по `element_id`),
-   артефакты и обновляет статус.
-10. **Serve** — API отдаёт результат; веб рендерит.
+8. **Report generation** — собирает единый JSON (`technologies`, `api`, `deployment`)
+   из артефактов анализа; внутренняя C4-модель генерируется для вкладки C4.
+9. **Persist** — пишет метаданные/отчёт/C4-модель в PostgreSQL, граф — в Neo4j
+   (`MERGE` по `element_id`), артефакты и обновляет статус.
+10. **Serve** — API отдаёт JSON-отчёт и данные вкладок; веб рендерит.
 
 ## 6. Извлечение API
 
@@ -183,7 +185,7 @@ flowchart LR
 | GitLab CI (`.gitlab-ci.yml`) | стадии, job'ы, окружения, образы раннеров |
 
 Результат — `deploymentNodes` (Deployment Node → Container Instance) и `deploymentRelationships`
-в терминах Structurizr, плюс связи «контейнер → deployment node».
+в терминах C4/deployment, плюс связи «контейнер → deployment node».
 
 ## 8. Модель данных (PostgreSQL + Neo4j)
 
@@ -192,8 +194,8 @@ projects(id, name, repo_url, provider, default_branch, token_encrypted, created_
 analysis_runs(id, project_id, status, stage, progress, technologies_count,
 services_count, api_count, commit_sha, config jsonb, error text,
               started_at, finished_at)
-architecture_snapshots(id, project_id, run_id, structurizr_dsl text,
-                       structurizr_json jsonb, graph jsonb, generated_at)
+architecture_snapshots(id, project_id, run_id, dsl text, workspace jsonb,
+                       report jsonb, generated_at)  -- dsl/workspace — внутренние для C4
 api_specs(id, project_id, run_id, kind, name, spec jsonb)      -- openapi|grpc|graphql|annotations
 tech_registry(id, project_id, run_id, technologies jsonb)      -- языки, фреймворки, библиотеки, версии
 deployment_models(id, project_id, run_id, model jsonb)         -- nodes + relationships
@@ -203,24 +205,50 @@ artifacts(id, run_id, kind, path, content bytea/text)          -- dsl, openapi.y
 - **Граф архитектуры** (elements + relationships) хранится в **Neo4j**; `architecture_snapshots.graph`
   (JSONB) — только слепок/экспорт для воспроизводимости и импорта, не источник для графовых запросов
   ([ADR-0010](adr/0010-graph-storage.md)). Транзитивные запросы — Cypher (`MATCH ... -[*1..N]-> ...`).
-- Внутренний JSON-контракт элементов/связей максимально близок к Structurizr workspace JSON,
-  чтобы минимизировать трансформации.
+- `architecture_snapshots.report` — единый публичный JSON-отчёт; `dsl`/`workspace` —
+  внутренние данные для C4 и наружу не отдаются.
 
-## 9. Генерация Structurizr-вывода
+## 9. Единый JSON-отчёт
 
-Из внутренней модели генерируются два артефакта одного workspace:
+Публичный результат запуска — один JSON с тремя массивами:
 
-1. **`workspace.dsl`** — Structurizr DSL (текст), читаемый и редактируемый человеком.
-2. **`workspace.json`** — Structurizr workspace JSON (машинный формат для импорта в
-   Structurizr Lite / on-premises / клиентские библиотеки).
+```json
+{
+  "technologies": [
+    {"name": "Spring Boot", "type": "framework", "version": "3.3.0", "description": "pom.xml"}
+  ],
+  "api": [
+    {
+      "service": "products-service",
+      "methods": [
+        {"operation": "GET /products", "description": "Список продуктов", "technology": "OpenAPI"}
+      ]
+    }
+  ],
+  "deployment": [
+    {
+      "method": "Docker Compose",
+      "services": [
+        {"name": "api", "image": "nginx", "image_version": "1.25",
+         "ports": ["8080:80"], "dependencies": ["db"]}
+      ]
+    }
+  ]
+}
+```
 
-Правила маппинга: сервис (ArchGuard) → `softwareSystem`; контейнер (Dockerfile/k8s) → `container`;
-модуль/пакет → `component`; вызов API → relationship с тегом `API`; обращение к БД → relationship
-с тегом `Database`; `deploymentNodes` из §7. См. [ADR-0009](adr/0009-structurizr-output.md).
+- **Технологии** берутся из реестра (`name`, `kind` → `type`, `version`, `evidence` → `description`).
+- **API** группируется по сервисам; методы собираются из OpenAPI, annotations, gRPC и GraphQL.
+- **Deployment** группируется по способу (Docker Compose, Dockerfile, Kubernetes, Helm, ArgoCD,
+  GitLab CI); образ и версия разделяются, порты и зависимости сохраняются.
+- Отчёт хранится в `architecture_snapshots.report`; для старых запусков собирается лениво
+  и кешируется. API: `GET /api/runs/{id}/report` (и `?download=true`).
+- Внутренняя C4-модель (DSL/workspace) наружу не отдаётся; для вкладки C4 используется
+  минимальный `/c4.model` и SVG `/c4.svg`. Решение — [ADR-0021](adr/0021-json-report.md).
 
 Связи несут **протоколы транспортного и прикладного уровня** (`transport`, `protocol`, `port`):
-они определяются по образу/порту целевого сервиса и попадают в Structurizr (`technology` +
-`properties`), Neo4j-рёбра и подписи на графе. Базовые правила:
+они определяются по образу/порту целевого сервиса и попадают в Neo4j-рёбра и подписи C4.
+Базовые правила:
 
 | Цель | Прикладной | Транспорт | Порт |
 |------|-----------|-----------|------|
@@ -239,11 +267,12 @@ artifacts(id, run_id, kind, path, content bytea/text)          -- dsl, openapi.y
   зависимостями, плюс переключатель на **Mermaid** (System Context / Container / Component).
 - **API-каталог** — единый поиск/фильтры по всем операциям (OpenAPI/annotations/gRPC/GraphQL),
   панель деталей и deep links без конфликта с hash-роутингом.
-- Граф архитектуры остаётся в Neo4j и доступен через API (`/graph/elements`,
-  `/graph/dependencies`); интерактивный граф из карточек систем убран.
-- **C4 SVG** — `GET /api/runs/{id}/c4.svg`: DOT из Structurizr JSON, Graphviz `fdp`,
-  кластеры систем, связанные внешние системы; кешируется, скачивается и встраивается в UI.
-- Экспорт/скачивание: `workspace.dsl`, `workspace.json`, `openapi.json`, реестр технологий (JSON/CSV).
+- **Обзор** — компактная плашка (URL + статус), статистика запуска и раскрывающееся
+  JSON-дерево отчёта с кнопкой скачивания.
+- Граф архитектуры остаётся в Neo4j как внутреннее хранилище; публичные graph-API удалены.
+- **C4 SVG** — `GET /api/runs/{id}/c4.svg`: DOT из внутренней C4-модели, Graphviz `fdp`,
+  кластеры систем, связанные внешние системы; кешируется и встраивается в UI.
+- Экспорт: JSON-отчёт (`/report?download=true`), API-каталог CSV, реестр технологий, C4 SVG.
 
 ## 11. Развёртывание (docker-compose)
 
@@ -294,6 +323,6 @@ volumes: { data: {}, pgdata: {}, neo4jdata: {} }
 - Покрытие C++ на уровне «сервисов» слабое (doxygen/cpp-dependencies дают только include/call-графы) —
   связь C++-модулей с API/сервисами остаётся ручной.
 - Поддержка монорепо с несколькими deployables и маппинг «код ↔ сервис» требует уточнения.
-- Граф архитектуры хранится в Neo4j (см. [ADR-0010](adr/0010-graph-storage.md)); двойная запись
-  PostgreSQL/Neo4j и её согласованность — зона особого внимания при реализации Persist.
+- Граф архитектуры хранится в Neo4j как внутреннее хранилище (см. [ADR-0010](adr/0010-graph-storage.md));
+  публичные graph-API удалены, UI-граф убран.
 - Мультиарендность и GitLab/GitHub OAuth — отложены до v2 ([ADR-0008](adr/0008-auth.md)).

@@ -166,11 +166,15 @@ def test_results_endpoint(client: TestClient, session: Session, tmp_path: Path) 
     assert body["deployment"]["compose"]
     assert any(artifact["kind"] == "cpp" for artifact in body["artifacts"])
 
-    structurizr = client.get(f"/api/runs/{run['id']}/structurizr")
-    assert structurizr.status_code == 200
-    artifact = structurizr.json()
-    assert artifact["dsl"].startswith("workspace ")
-    assert artifact["workspace"]["name"] == "demo"
+    report = client.get(f"/api/runs/{run['id']}/report")
+    assert report.status_code == 200
+    payload = report.json()
+    assert set(payload) == {"technologies", "api", "deployment"}
+    assert payload["technologies"]
+    assert payload["api"]
+    assert payload["deployment"]
+    assert client.get(f"/api/runs/{run['id']}/structurizr").status_code == 404
+    assert client.get(f"/api/runs/{run['id']}/graph/elements").status_code == 404
 
 
 def test_repo_is_removed_after_run(tmp_path: Path, session: Session) -> None:

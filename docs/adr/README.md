@@ -16,7 +16,7 @@
 | [0006](0006-deployment-sources.md) | Источники развёртывания: Dockerfile/compose, k8s, Helm, ArgoCD, GitLab CI | Принято |
 | [0007](0007-api-sources.md) | Источники API: OpenAPI, gRPC/protobuf, GraphQL, аннотации фреймворков | Принято |
 | [0008](0008-auth.md) | Одиночный пользователь / внутренний режим | Принято |
-| [0009](0009-structurizr-output.md) | Вывод в Structurizr: DSL + JSON workspace (оба формата) | Принято |
+| [0009](0009-structurizr-output.md) | Вывод в Structurizr: DSL + JSON workspace | Заменено ADR-0021 |
 | [0010](0010-graph-storage.md) | Хранение графа архитектуры в Neo4j | Принято |
 | [0011](0011-worker-analyzer-interaction.md) | Взаимодействие worker ↔ analyzer: очередь + общий volume | Принято |
 | [0012](0012-gitlab-access.md) | Доступ к GitLab: access token | Принято |
@@ -28,6 +28,7 @@
 | [0018](0018-api-catalog.md) | API-каталог вместо Redoc | Принято |
 | [0019](0019-forceatlas2-graph.md) | ForceAtlas2 и перетаскиваемые узлы графа | Заменено: UI-граф убран |
 | [0020](0020-graphviz-c4.md) | Graphviz C4 container diagram (по мотивам VARP) | Принято |
+| [0021](0021-json-report.md) | Единый JSON-отчёт вместо Structurizr | Принято |
 
 ## Шаблон записи
 

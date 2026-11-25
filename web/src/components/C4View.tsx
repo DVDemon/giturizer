@@ -1,6 +1,8 @@
 import mermaid from "mermaid";
 import { useEffect, useMemo, useState } from "react";
 
+import type { C4Model } from "../types";
+
 let counter = 0;
 
 function quote(value: unknown): string {
@@ -11,12 +13,11 @@ function asArray(value: unknown): any[] {
   return Array.isArray(value) ? value : [];
 }
 
-function buildMermaid(workspace: Record<string, unknown>): string {
-  const model = (workspace as { model?: Record<string, unknown> }).model ?? {};
+function buildMermaid(model: C4Model): string {
   const lines = ["flowchart LR"];
   const nodeIds = new Map<string, string>();
 
-  for (const system of asArray(model.softwareSystems)) {
+  for (const system of model.softwareSystems) {
     const systemId = `s${system.id}`;
     nodeIds.set(system.id, systemId);
     const containers = asArray(system.containers);
@@ -45,7 +46,7 @@ function buildMermaid(workspace: Record<string, unknown>): string {
     }
   }
 
-  for (const relationship of asArray(model.relationships)) {
+  for (const relationship of model.relationships) {
     const source = nodeIds.get(relationship.sourceId);
     const target = nodeIds.get(relationship.destinationId);
     if (!source || !target) {
@@ -58,10 +59,10 @@ function buildMermaid(workspace: Record<string, unknown>): string {
 }
 
 export function C4View({
-  workspace,
+  model,
   runId,
 }: {
-  workspace: Record<string, unknown>;
+  model: C4Model;
   runId: string;
 }) {
   const [svg, setSvg] = useState("");
@@ -69,7 +70,7 @@ export function C4View({
   const [mode, setMode] = useState<"graphviz" | "mermaid">("graphviz");
   const [graphvizError, setGraphvizError] = useState(false);
   const [zoom, setZoom] = useState(100);
-  const code = useMemo(() => buildMermaid(workspace), [workspace]);
+  const code = useMemo(() => buildMermaid(model), [model]);
 
   useEffect(() => {
     setGraphvizError(false);

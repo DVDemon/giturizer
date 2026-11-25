@@ -1,4 +1,4 @@
-"""C4 container diagram: DOT из Structurizr JSON и рендер Graphviz."""
+"""C4 container diagram: DOT из внутренней C4-модели и рендер Graphviz."""
 
 import re
 import subprocess

@@ -10,7 +10,7 @@
         ┌─────────────┐
         │   E2E       │  Docker Compose + Playwright (мало, дорого)
         ├─────────────┤
-        │ Contract    │  схемы API / Structurizr JSON Schema
+        │ Contract    │  схемы API / JSON-отчёт
         ├─────────────┤
         │ Integration │  Postgres/Redis (testcontainers), очередь
         ├─────────────┤
@@ -23,7 +23,7 @@
 Принципы:
 
 - **Детерминизм**: unit/component не ходят в сеть; GitHub/GitLab мокается; внешние анализаторы — за маркером.
-- **Golden-файлы** для Structurizr-вывода и парсеров (snapshot-тестирование с явным обновлением).
+- **Golden-файлы** для JSON-отчёта и парсеров (snapshot-тестирование с явным обновлением).
 - **Каждый анализатор — за абстракцией**: подмена реального раннера на фейк в тестах.
 - **Отказ изолируется**: тест «сбой одного анализатора → остальные этапы проходят».
 
@@ -33,7 +33,7 @@
 |------|-------------|
 | Бэкенд | `pytest`, `pytest-asyncio`, `pytest-cov`, `httpx.AsyncClient`/`TestClient`, `respx`, `freezegun`, `hypothesis` (для парсеров) |
 | Интеграция | `testcontainers-python` (postgres, neo4j, redis), `celery` eager mode, `fakeredis` |
-| Контракты | `jsonschema` (Structurizr workspace schema), `schemathesis` (опц.) |
+| Контракты | `jsonschema` (JSON-отчёт), `schemathesis` (опц.) |
 | Анализаторы | `pytest`-обёртки + реальные образы (маркер `@pytest.mark.docker`) |
 | Веб | `vitest`, `@testing-library/react`, `msw`, `Playwright` |
 | Качество | `ruff`, `black`, `mypy` (backend); `eslint`, `tsc` (web) |
@@ -47,7 +47,7 @@
 - `tech_detect` — маппинг манифестов → языки/фреймворки.
 - `merge` — склейка, дедупликация, стабильность ID (ID не «прыгают» между прогонами).
 - `graph` — маппинг модели в узлы/рёбра Neo4j, генерация Cypher-запросов.
-- `structurizr.dsl` / `structurizr.json` — golden-снапшоты.
+- `report.json` — golden-снапшот единого отчёта.
 - `deployment/*` — парсеры YAML/Dockerfile/GitLab CI на фикстурах.
 - `api_extractors/*` — нормализация OpenAPI/gRPC/GraphQL/аннотаций.
 - `gitlab` — обработка URL/токена, редакция секретов в логах.
@@ -77,7 +77,7 @@ tests/fixtures/repos/<name>/   →   запуск шага   →   ожидае�
 ### 3.4 Contract
 
 - Валидация всех ответов API по Pydantic-схемам (и `schemathesis` при наличии OpenAPI нашего API).
-- Валидация `workspace.json` по **Structurizr workspace JSON Schema**; `workspace.dsl` — парсинг генератором/валидатором.
+- Валидация структуры `report.json` (три массива: technologies/api/deployment).
 - Валидация извлечённого `openapi.json` по OpenAPI 3.x schema.
 
 ### 3.5 E2E
@@ -86,8 +86,8 @@ tests/fixtures/repos/<name>/   →   запуск шага   →   ожидае�
 
 1. Открыть UI → создать проект с URL фикстуры.
 2. Дождаться статуса `done`.
-3. Увидеть граф зависимостей, C4-диаграмму, API, реестр технологий.
-4. Скачать `workspace.dsl` / `workspace.json` — файлы валидны.
+3. Увидеть C4-диаграмму, API-каталог, реестр технологий, deployment и JSON-дерево.
+4. Скачать JSON-отчёт — структура и массивы валидны.
 
 GitLab-источник подменяется лёгким `git-http` контейнером с фикстурным репо (или мок-сервером).
 
@@ -120,7 +120,7 @@ GitLab-источник подменяется лёгким `git-http` конт�
 | `deploy-kit/` | Helm, ArgoCD, `.gitlab-ci.yml`, compose |
 | `api-specs/` | openapi.yaml, `*.proto`, `*.graphql` |
 
-**Golden-файлы** (`tests/golden/`): эталонные `workspace.dsl`, `workspace.json`, нормализованные графы; обновление — только осознанно (`UPDATE_GOLDEN=1`).
+**Golden-файлы** (`tests/golden/`): эталонный `report.json` и нормализованные данные; обновление — только осознанно (`UPDATE_GOLDEN=1`).
 
 ## 5. Матрица «модуль → типы тестов»
 
@@ -135,7 +135,7 @@ GitLab-источник подменяется лёгким `git-http` конт�
 | deployment/* | ✅ | ✅ | — | — | ✅ | — | — |
 | merge/model | ✅ | ✅ | — | ✅ | — | — | — |
 | graph/neo4j | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
-| structurizr gen | ✅ | ✅ | — | ✅ | ✅ | — | — |
+| report gen | ✅ | ✅ | — | ✅ | ✅ | — | — |
 | persist/artifacts | ✅ | — | ✅ | ✅ | ✅ | — | ✅ |
 | web UI | ✅ | — | — | — | ✅ | — | — |
 
@@ -157,7 +157,7 @@ lint (ruff, black, mypy, eslint, tsc)
 ## 7. Гейты качества (Definition of Done для тестов)
 
 - Новая функциональность поставляется с unit- (и, где уместно, component-) тестами.
-- Изменение контракта (API, Structurizr-вывод) — с обновлением contract/golden-тестов.
+- Изменение контракта (API, JSON-отчёт) — с обновлением contract/golden-тестов.
 - `docker compose up` в CI проходит e2e smoke.
 - Нет секретов в логах (тест-security).
 - Порог покрытия не падает.
@@ -171,7 +171,7 @@ lint (ruff, black, mypy, eslint, tsc)
 - [ ] Все 5 языков дают хотя бы базовый результат.
 - [ ] Deployment-модель извлекается из всех 5 источников.
 - [ ] API извлекается из всех 4 групп источников.
-- [ ] `workspace.dsl`/`workspace.json` валидны и открываются в Structurizr.
+- [ ] JSON-отчёт содержит technologies/api/deployment и скачивается.
 - [ ] Граф в Neo4j согласован с PostgreSQL; транзитивные запросы корректны.
 - [ ] Веб показывает C4, API, технологии, deployment; граф доступен через API.
 - [ ] Сбой одного анализатора не роняет весь запуск.

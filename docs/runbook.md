@@ -63,7 +63,7 @@ API_URL=http://localhost:8000 GITLAB_URL=https://gitlab.com/group/repo \
 ```
 
 Смоук: создаёт проект (или использует `PROJECT_ID`), запускает анализ, ждёт `done`,
-проверяет `structurizr`, `results`, `graph`, `c4.svg` и скачивание DSL.
+проверяет `report`, `results`, `c4.model` и `c4.svg`.
 
 ## 5. Логи и очередь
 
@@ -137,6 +137,7 @@ docker run --rm -v archdiscovery_data:/data -v "$PWD":/backup alpine \
 | graph-эндпоинт 503 | `docker compose ps neo4j`, креды `NEO4J_*` |
 | C4 `503 graphviz unavailable` | пересоберите `api` (`graphviz`/`fdp` в образе), проверьте `docker compose exec api fdp -V` |
 | C4 пустая/мелкая | откройте `GET /api/runs/{id}/c4.svg`, используйте масштаб 150–200%; Mermaid — как fallback |
+| JSON-отчёт пустой/404 | проверьте `GET /api/runs/{id}/report`; для старых запусков отчёт собирается лениво, для новых — на этапе analysis; логи `worker` |
 | Порт занят | измените `API_PORT`/`WEB_PORT` в `.env` |
 | Очередь растёт | масштабируйте `worker`/`analyzer`, проверьте Redis |
 | Мало места | очистка артефактов (см. §6), `docker system prune` |

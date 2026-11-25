@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { api } from "../api";
 import { formatDate, formatDuration, stageLabel, statusLabel } from "../format";
-import type { Project, Run, RunResults, StructurizrArtifact } from "../types";
+import type { C4Model, Project, Run, RunReport, RunResults } from "../types";
 import { ApiView } from "./ApiView";
 import { C4View } from "./C4View";
 import { DeploymentView } from "./DeploymentView";
@@ -38,7 +38,8 @@ export function ScanPage({ projectId, onBack }: Props) {
   const [runs, setRuns] = useState<Run[]>([]);
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [results, setResults] = useState<RunResults | null>(null);
-  const [structurizr, setStructurizr] = useState<StructurizrArtifact | null>(null);
+  const [c4Model, setC4Model] = useState<C4Model | null>(null);
+  const [report, setReport] = useState<RunReport | null>(null);
   const [tab, setTab] = useState<Tab>(() => initialTab());
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -56,7 +57,8 @@ export function ScanPage({ projectId, onBack }: Props) {
     setRuns([]);
     setActiveRunId(null);
     setResults(null);
-    setStructurizr(null);
+    setC4Model(null);
+    setReport(null);
     setTab(initialTab());
     Promise.all([api.project(projectId), api.runs(projectId)])
       .then(([loadedProject, loadedRuns]) => {
@@ -111,21 +113,22 @@ export function ScanPage({ projectId, onBack }: Props) {
   useEffect(() => {
     if (!activeRunIdValue || activeRunStatus !== "done") {
       setResults(null);
-      setStructurizr(null);
+      setC4Model(null);
+      setReport(null);
       return;
     }
     let cancelled = false;
     Promise.allSettled([
       api.results(activeRunIdValue),
-      api.structurizr(activeRunIdValue),
-    ]).then(([resultsResult, structurizrResult]) => {
+      api.c4Model(activeRunIdValue),
+      api.report(activeRunIdValue),
+    ]).then(([resultsResult, c4Result, reportResult]) => {
       if (cancelled) {
         return;
       }
       setResults(resultsResult.status === "fulfilled" ? resultsResult.value : null);
-      setStructurizr(
-        structurizrResult.status === "fulfilled" ? structurizrResult.value : null,
-      );
+      setC4Model(c4Result.status === "fulfilled" ? c4Result.value : null);
+      setReport(reportResult.status === "fulfilled" ? reportResult.value : null);
     });
     return () => {
       cancelled = true;
@@ -211,6 +214,7 @@ export function ScanPage({ projectId, onBack }: Props) {
 
       {activeRun && (
         <>
+          {activeRun.status !== "done" && (
           <section className="scan-card">
             <div className="scan-card-head">
               <StatusBadge status={activeRun.status} />
@@ -255,6 +259,18 @@ export function ScanPage({ projectId, onBack }: Props) {
               <span>Завершён: {formatDate(activeRun.finished_at)}</span>
             </div>
           </section>
+          )}
+
+          {activeRun.status === "done" && (
+            <div className="scan-compact">
+              <StatusBadge status={activeRun.status} />
+              {project && (
+                <a href={project.repo_url} target="_blank" rel="noreferrer">
+                  {project.repo_url}
+                </a>
+              )}
+            </div>
+          )}
 
           {activeRun.status === "failed" && (
             <div className="alert error">
@@ -285,13 +301,18 @@ export function ScanPage({ projectId, onBack }: Props) {
               {!results ? (
                 <p className="muted">Загрузка результатов…</p>
               ) : tab === "overview" ? (
-                <OverviewPanel run={activeRun} results={results} runId={activeRun.id} />
-              ) : tab === "c4" && !structurizr ? (
+                <OverviewPanel
+                  run={activeRun}
+                  results={results}
+                  report={report}
+                  runId={activeRun.id}
+                />
+              ) : tab === "c4" && !c4Model ? (
                 <p className="muted">
-                  Для этого запуска нет Structurizr-снапшота — запустите анализ заново.
+                  Для этого запуска нет C4-модели — запустите анализ заново.
                 </p>
-              ) : tab === "c4" && structurizr ? (
-                <C4View runId={activeRun.id} workspace={structurizr.workspace} />
+              ) : tab === "c4" && c4Model ? (
+                <C4View runId={activeRun.id} model={c4Model} />
               ) : tab === "api" ? (
                 <ApiView specs={results.api_specs} />
               ) : tab === "tech" ? (

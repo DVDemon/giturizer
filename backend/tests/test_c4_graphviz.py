@@ -102,9 +102,13 @@ def test_c4_svg_endpoint(client, session, monkeypatch) -> None:
     session.commit()
 
     monkeypatch.setattr(
-        "archdiscovery.api.routes.structurizr.render_c4_svg",
+        "archdiscovery.api.routes.c4.render_c4_svg",
         lambda workspace: "<svg>ok</svg>",
     )
+
+    model = client.get(f"/api/runs/{run.id}/c4.model")
+    assert model.status_code == 200
+    assert model.json()["softwareSystems"]
 
     response = client.get(f"/api/runs/{run.id}/c4.svg")
 
@@ -133,7 +137,7 @@ def test_c4_svg_endpoint_returns_503_on_graphviz_error(client, session, monkeypa
     def fail(workspace):
         raise GraphvizError("dot not found")
 
-    monkeypatch.setattr("archdiscovery.api.routes.structurizr.render_c4_svg", fail)
+    monkeypatch.setattr("archdiscovery.api.routes.c4.render_c4_svg", fail)
 
     response = client.get(f"/api/runs/{run.id}/c4.svg")
 
