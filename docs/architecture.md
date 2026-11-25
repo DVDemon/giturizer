@@ -135,7 +135,7 @@ flowchart LR
    `package.json`). Формирует первичный реестр технологий.
 4. **Language analysis** — по обнаруженным языкам `worker` последовательно ставит задачи в очередь
    `analyzers`; контейнер `analyzer` выполняет соответствующие инструменты над клоном:
-   - Java / TypeScript / Python → **Tree-sitter syntax-index** (endpoint → handler, source ranges);
+   - Java / TypeScript / Python → **Tree-sitter syntax-index** (endpoint → handler, call graph, outbound calls, source ranges);
    - Java / Kotlin / C# / TS/JS / Python / Go → **ArchGuard scanner** (Java-фичи apicalls/datamap:
      services map, API, database map; классы и модули). Анализаторы предзагружены в образ,
      каждый язык запускается независимо: ошибка языка фиксируется и не валит остальные;

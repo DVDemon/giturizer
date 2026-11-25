@@ -36,7 +36,8 @@ ANNOTATION_TYPES = {"annotation", "marker_annotation", "decorator"}
 STRING_TYPES = {"string_literal", "string", "raw_string_literal"}
 URL_RE = re.compile(r"https?://[^\s\"'`]+|/api/v\d+/[^\s\"'`]+")
 HTTP_CLIENT_RE = re.compile(
-    r"(?i)(axios|fetch|httpx|requests|resttemplate|webclient|feign|okhttp|httpclient)"
+    r"(?i)(?:axios|httpx|requests|aiohttp|resttemplate|webclient|feign|okhttp|httpclient|httpservice|superagent)"
+    r"(?:\.|\()|(?:^|\.)fetch(?:\(|$)|(?:^|\.)got(?:\(|$)"
 )
 
 
@@ -61,6 +62,15 @@ def _symbol_name(node: Node, source: bytes) -> str:
 
 
 def _call_name(node: Node, source: bytes) -> str:
+    if node.type == "method_invocation":
+        name = node.child_by_field_name("name")
+        receiver = node.child_by_field_name("object")
+        if name is not None and receiver is not None:
+            if receiver.type in {"identifier", "field_access"}:
+                return f"{_text(receiver, source)}.{_text(name, source)}"
+            return _text(name, source)
+        if name is not None:
+            return _text(name, source)
     for field in ("function", "name"):
         child = node.child_by_field_name(field)
         if child is not None:
@@ -132,6 +142,7 @@ def analyze_file(path: Path, repo: Path) -> dict[str, Any]:
     imports: list[str] = []
     classes: list[str] = []
     functions: list[str] = []
+    methods: list[dict[str, Any]] = []
     annotations: list[dict[str, Any]] = []
     calls: list[dict[str, Any]] = []
     owners: list[dict[str, Any]] = []
@@ -153,6 +164,16 @@ def analyze_file(path: Path, repo: Path) -> dict[str, Any]:
         if node.type in FUNCTION_TYPES:
             current_function = _symbol_name(node, source)
             functions.append(current_function)
+            methods.append(
+                {
+                    "name": current_function,
+                    "class": current_class,
+                    "file": relative,
+                    "line": _line(node),
+                    "start": node.start_byte,
+                    "end": node.end_byte,
+                }
+            )
             owners.append(
                 {
                     "name": current_function,
@@ -170,9 +191,10 @@ def analyze_file(path: Path, repo: Path) -> dict[str, Any]:
             calls.append(
                 {
                     "callee": name,
+                    "file": relative,
                     "line": _line(node),
                     "caller": current_function or "",
-                    "owner_class": current_class or "",
+                    "owner_class": current_class,
                     "urls": urls,
                     "http_client_like": bool(HTTP_CLIENT_RE.search(name)),
                 }
@@ -211,5 +233,6 @@ def analyze_file(path: Path, repo: Path) -> dict[str, Any]:
         "classes": classes,
         "functions": functions,
         "annotations": annotations,
+        "methods": methods,
         "calls": calls,
     }

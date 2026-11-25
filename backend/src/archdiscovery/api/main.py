@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from archdiscovery import __version__
-from archdiscovery.api.routes import c4, handlers, health, projects, report, results, runs
+from archdiscovery.api.routes import c4, handlers, health, outbound, projects, report, results, runs
 from archdiscovery.config import settings
 from archdiscovery.logging import configure_logging
 from archdiscovery.services.errors import DispatchError, NotFoundError
@@ -39,6 +39,7 @@ app.include_router(runs.router)
 app.include_router(results.router)
 app.include_router(report.router)
 app.include_router(handlers.router)
+app.include_router(outbound.router)
 app.include_router(c4.router)
 
 

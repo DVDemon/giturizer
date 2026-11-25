@@ -170,6 +170,7 @@ lint (ruff, black, mypy, eslint, tsc)
 - [ ] C4: Graphviz SVG, переключение на Mermaid, масштаб, скачивание; подписи протоколов/транспорта; скрытие при одном прямоугольнике.
 - [ ] API/Deployment вкладки скрываются при отсутствии данных.
 - [ ] Tree-sitter: Spring/NestJS/FastAPI route + handler, Feign исключён, тесты/source ranges.
+- [ ] P2 call graph: handler → service → HTTP-клиент, лимиты глубины/outbound, без `fetchone`-ложных срабатываний.
 - [ ] Все 5 языков дают хотя бы базовый результат.
 - [ ] Deployment-модель извлекается из всех 5 источников.
 - [ ] API извлекается из всех 4 групп источников.

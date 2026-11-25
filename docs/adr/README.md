@@ -31,6 +31,7 @@
 | [0021](0021-json-report.md) | Единый JSON-отчёт вместо Structurizr | Принято |
 | [0022](0022-postgres-only.md) | PostgreSQL-only, без Neo4j | Принято |
 | [0023](0023-tree-sitter-syntax.md) | Tree-sitter syntax-index для API-handler'ов | Принято |
+| [0024](0024-outbound-callgraph.md) | Call graph handler → outbound API | Принято |
 
 ## Шаблон записи
 

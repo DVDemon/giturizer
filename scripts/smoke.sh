@@ -95,6 +95,17 @@ assert "handlers" in data
 print("available:", data.get("available"), "| handlers:", len(data["handlers"]))
 PY
 
+log "outbound-calls"
+curl -fsS "$API_URL/api/runs/$RUN_ID/outbound-calls" -o /tmp/smoke-outbound.json \
+  || fail "outbound-calls endpoint"
+python3 - <<'PY'
+import json
+
+data = json.load(open("/tmp/smoke-outbound.json"))
+assert "calls" in data
+print("available:", data.get("available"), "| outbound:", len(data["calls"]))
+PY
+
 log "c4"
 curl -fsS "$API_URL/api/runs/$RUN_ID/c4.model" >/dev/null || fail "c4 model"
 curl -fsS "$API_URL/api/runs/$RUN_ID/c4.svg" -o /tmp/smoke-c4.svg || fail "c4 svg"

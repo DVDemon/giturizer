@@ -9,6 +9,7 @@ from typing import Any
 
 import tree_sitter
 
+from archdiscovery.analyzer.syntax.callgraph import build_outbound_calls
 from archdiscovery.analyzer.syntax.index import LANGUAGE_BY_SUFFIX, analyze_file
 from archdiscovery.analyzer.syntax.routes import build_handlers
 
@@ -62,14 +63,17 @@ def analyze_syntax(
             )
 
     handlers = build_handlers(files, repo_path)
+    outbound_calls = build_outbound_calls(files, handlers)
     result = {
         "tool": "tree-sitter",
         "version": tree_sitter.__version__,
         "languages": sorted({item["language"] for item in files}),
         "handlers": handlers,
+        "outbound_calls": outbound_calls,
         "stats": {
             "files": len(files),
             "handlers": len(handlers),
+            "outbound_calls": len(outbound_calls),
             "languages": sorted({item["language"] for item in files}),
         },
         "errors": errors,

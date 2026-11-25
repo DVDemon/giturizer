@@ -4,6 +4,9 @@
 
 ### Added
 
+- **P2: call graph handler → outbound HTTP-кандидат** для Java/TS/Python:
+  Spring/Feign/RestTemplate, Nest/axios/fetch, FastAPI/httpx/requests;
+  artifact `syntax.outbound_calls`, `GET /api/runs/{id}/outbound-calls`.
 - **P1: Tree-sitter syntax-index** для Java/TypeScript/Python: endpoint → handler,
   artifact `syntax`, `GET /api/runs/{id}/handlers`; Spring/NestJS/Express/FastAPI/Flask.
   Зависимости ставятся только в образ `analyzer` (extra `syntax`).
