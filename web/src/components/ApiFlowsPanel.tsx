@@ -20,6 +20,7 @@ function kindLabel(kind: string): string {
     s3: "S3",
     rabbitmq: "RabbitMQ",
     kafka: "Kafka",
+    neo4j: "Neo4j",
     mongodb: "MongoDB",
     elasticsearch: "Elasticsearch",
     database: "База данных",

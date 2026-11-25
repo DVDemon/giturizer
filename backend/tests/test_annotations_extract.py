@@ -68,3 +68,25 @@ def test_extracts_aspnet_attributes(tmp_path: Path) -> None:
     specs = extract_annotation_specs(tmp_path)
 
     assert {"method": "GET", "path": "/list"} in specs[0]["spec"]["endpoints"]
+
+
+def test_extracts_spring_path_attribute(tmp_path: Path) -> None:
+    source = (
+        "@RestController\n"
+        '@RequestMapping(path = "/api")\n'
+        "public class NfrController {\n"
+        '  @GetMapping(path = "/v1/nfr/{id}", produces = "application/json")\n'
+        '  public String get() { return ""; }\n'
+        '  @PostMapping(path = "/import/{entityType}")\n'
+        '  public String upload() { return ""; }\n'
+        '  @GetMapping(produces = "application/json")\n'
+        '  public String list() { return ""; }\n'
+        "}\n"
+    )
+    (tmp_path / "NfrController.java").write_text(source, encoding="utf-8")
+
+    endpoints = extract_annotation_specs(tmp_path)[0]["spec"]["endpoints"]
+
+    assert {"method": "GET", "path": "/api/v1/nfr/{id}"} in endpoints
+    assert {"method": "POST", "path": "/api/import/{entityType}"} in endpoints
+    assert {"method": "GET", "path": "/api"} in endpoints

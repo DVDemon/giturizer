@@ -201,6 +201,7 @@ HTTP-вызов определяется по:
 | `s3` | s3, boto3, aws-sdk/client-s3, minio |
 | `rabbitmq` | rabbit, pika, amqp, rabbittemplate, AmqpClient |
 | `kafka` | kafka, kafkatemplate, confluent, kafkajs |
+| `neo4j` | neo4j, org.neo4j, cypher |
 | `mongodb` | mongo, mongotemplate |
 | `elasticsearch` | elasticsearch, opensearch |
 

@@ -3,10 +3,10 @@ from pathlib import Path
 
 IGNORED_DIRS = {".git", "node_modules", "dist", "build", "target", "__pycache__"}
 
-JAVA_MAPPING_RE = re.compile(
-    r"@(Get|Post|Put|Delete|Patch)Mapping\s*" r'(?:\(\s*(?:value\s*=\s*)?"([^"]*)"[^)]*\))?'
-)
-JAVA_REQUEST_BASE_RE = re.compile(r'@RequestMapping\(\s*(?:value\s*=\s*)?"([^"]*)"')
+JAVA_MAPPING_RE = re.compile(r"@(Get|Post|Put|Delete|Patch)Mapping\b\s*(?:\((.*?)\))?", re.DOTALL)
+JAVA_REQUEST_BASE_RE = re.compile(r"@RequestMapping\b\s*(?:\((?P<args>.*?)\))?", re.DOTALL)
+JAVA_PATH_ARG_RE = re.compile(r'(?:value|path)\s*=\s*"([^"]*)"')
+JAVA_POSITIONAL_PATH_RE = re.compile(r'^\s*"([^"]*)"')
 JAVA_PATH_RE = re.compile(r'@Path\(\s*"([^"]*)"\s*\)')
 JAXRS_METHOD_RE = re.compile(r"@(GET|POST|PUT|DELETE|PATCH)\b")
 
@@ -30,11 +30,37 @@ JS_ROUTE_RE = re.compile(
 )
 
 
+def _java_path_arg(args: str | None) -> str:
+    if not args:
+        return ""
+    match = JAVA_PATH_ARG_RE.search(args)
+    if match:
+        return match.group(1)
+    positional = JAVA_POSITIONAL_PATH_RE.match(args)
+    return positional.group(1) if positional else ""
+
+
+def _join_path(base: str, path: str) -> str:
+    if not base:
+        return path or "/"
+    if not path:
+        return base
+    return "/" + "/".join(part.strip("/") for part in (base, path) if part.strip("/"))
+
+
 def _java_endpoints(text: str) -> tuple[list[dict], str]:
     base_match = JAVA_PATH_RE.search(text) or JAVA_REQUEST_BASE_RE.search(text)
-    base = base_match.group(1) if base_match else ""
+    if base_match is None:
+        base = ""
+    elif "args" in base_match.groupdict():
+        base = _java_path_arg(base_match.group("args"))
+    else:
+        base = base_match.group(1)
     endpoints = [
-        {"method": match.group(1).upper(), "path": base + (match.group(2) or "")}
+        {
+            "method": match.group(1).upper(),
+            "path": _join_path(base, _java_path_arg(match.group(2))),
+        }
         for match in JAVA_MAPPING_RE.finditer(text)
     ]
     if not endpoints:

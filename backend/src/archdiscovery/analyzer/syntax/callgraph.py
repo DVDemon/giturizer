@@ -28,6 +28,7 @@ EXTERNAL_PATTERNS = (
     ("s3", re.compile(r"(?i)(\bs3\b|boto3|aws-sdk/client-s3|minio)")),
     ("rabbitmq", re.compile(r"(?i)(rabbit|pika|amqp|rabbittemplate)")),
     ("kafka", re.compile(r"(?i)(kafka|kafkatemplate|confluent|kafkajs)")),
+    ("neo4j", re.compile(r"(?i)(neo4j|org\.neo4j|cypher)")),
     ("mongodb", re.compile(r"(?i)(mongo|mongotemplate)")),
     ("elasticsearch", re.compile(r"(?i)(elasticsearch|opensearch)")),
     ("database", re.compile(r"(?i)(sqlalchemy|datasource|repository)")),
@@ -54,6 +55,7 @@ GENERIC_EXTERNAL_METHODS = {
     "hset": {"redis"},
     "put_object": {"s3"},
     "get_object": {"s3"},
+    "run": {"neo4j"},
 }
 MAX_DEPTH = 6
 

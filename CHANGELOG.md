@@ -72,6 +72,8 @@
 
 ### Fixed
 
+- Spring `@*Mapping(path=...)`/`produces`: потерянные NFR/import/export endpoints
+  и ложные `/application/json` пути; C++/Neo4j теперь классифицируется.
 - Конфликт hash-роутинга приложения и Redoc-ссылок (`#tag/...`) устранён:
   навигация API идёт через query-параметры приложения.
 - UI не показывает Java-стек TypeScript-парсера ArchGuard: осталось только

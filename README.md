@@ -5,6 +5,7 @@
 
 - Архитектура: [docs/architecture.md](docs/architecture.md)
 - Как резолвятся API-flow: [docs/api-flow-resolution.md](docs/api-flow-resolution.md)
+- Аудит анализа BeeAtlas по документации: [docs/audit-beeatlas-docs.md](docs/audit-beeatlas-docs.md)
 - Решения (ADR): [docs/adr/README.md](docs/adr/README.md)
 - План разработки: [docs/plan/development-plan.md](docs/plan/development-plan.md)
 - План тестирования: [docs/plan/test-plan.md](docs/plan/test-plan.md)
