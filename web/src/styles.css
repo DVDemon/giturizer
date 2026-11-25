@@ -1460,3 +1460,39 @@ p {
   color: #141414;
   overflow-wrap: anywhere;
 }
+
+.flow-table {
+  table-layout: fixed;
+  min-width: 980px;
+}
+
+.flow-table th:nth-child(1) { width: 21%; }
+.flow-table th:nth-child(2) { width: 24%; }
+.flow-table th:nth-child(3) { width: 17%; }
+.flow-table th:nth-child(4) { width: 13%; }
+.flow-table th:nth-child(5) { width: 8%; }
+.flow-table th:nth-child(6) { width: 17%; }
+.flow-table td:nth-child(6) { white-space: nowrap; overflow-wrap: normal; }
+
+.flow-table td {
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.flow-path {
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.flow-meta {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 3px;
+}
+
+.flow-url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}

@@ -101,3 +101,43 @@ def test_outbound_calls_endpoint(client: TestClient, session: Session) -> None:
 
 def test_outbound_calls_endpoint_requires_run(client: TestClient) -> None:
     assert client.get(f"/api/runs/{uuid.uuid4()}/outbound-calls").status_code == 404
+
+
+def test_report_includes_api_flows(client: TestClient, session: Session) -> None:
+    project = Project(name="flows", repo_url="https://github.com/o/r", provider="github")
+    session.add(project)
+    session.commit()
+    session.refresh(project)
+    run = AnalysisRun(project_id=project.id)
+    session.add(run)
+    session.commit()
+    session.refresh(run)
+    flow = {
+        "input": {
+            "operation": "GET /orders",
+            "handler": {"file": "Orders.java", "line": 1, "symbol": "orders"},
+        },
+        "path": [{"symbol": "orders", "file": "Orders.java", "line": 1}],
+        "output": {
+            "callee": "restTemplate.exchange",
+            "file": "Orders.java",
+            "line": 4,
+            "urls": ["/api/v1/billing"],
+            "kind": "http",
+        },
+        "confidence": 0.75,
+        "status": "partial",
+    }
+    session.add(
+        RunArtifact(
+            run_id=run.id,
+            kind="syntax",
+            path="",
+            content={"outbound_calls": [flow]},
+        )
+    )
+    session.commit()
+
+    response = client.get(f"/api/runs/{run.id}/report")
+    assert response.status_code == 200
+    assert response.json()["api_flows"] == [flow]

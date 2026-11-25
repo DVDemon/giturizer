@@ -202,7 +202,8 @@ artifacts(id, run_id, kind, path, content bytea/text)          -- syntax.json, c
 
 - **Граф архитектуры** (elements + relationships) хранится внутри `architecture_snapshots.workspace`
   (JSONB) и используется для C4; отдельного графового хранилища нет ([ADR-0022](adr/0022-postgres-only.md)).
-- `architecture_snapshots.report` — единый публичный JSON-отчёт; `dsl`/`workspace` —
+- `architecture_snapshots.report` — единый публичный JSON-отчёт (`technologies`, `api`,
+`deployment`, `api_flows`); `dsl`/`workspace` —
   внутренние данные для C4 и наружу не отдаются.
 
 ## 9. Единый JSON-отчёт

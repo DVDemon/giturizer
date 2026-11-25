@@ -163,8 +163,40 @@ export interface ReportDeployment {
   services: ReportDeploymentService[];
 }
 
+export interface ApiFlowHandler {
+  file: string;
+  line: number;
+  symbol: string;
+  class?: string | null;
+}
+
+export interface ApiFlowStep {
+  symbol: string;
+  class?: string | null;
+  file: string;
+  line: number;
+}
+
+export interface ApiFlow {
+  input: {
+    operation: string;
+    handler: ApiFlowHandler;
+  };
+  path: ApiFlowStep[];
+  output: {
+    callee: string;
+    file: string;
+    line: number;
+    urls: string[];
+    kind: string;
+  };
+  confidence: number;
+  status: string;
+}
+
 export interface RunReport {
   technologies: ReportTechnology[];
   api: ReportApiService[];
   deployment: ReportDeployment[];
+  api_flows: ApiFlow[];
 }

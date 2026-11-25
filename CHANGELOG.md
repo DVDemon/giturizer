@@ -4,6 +4,8 @@
 
 ### Added
 
+- **UI/JSON: API-потоки** — массив `api_flows` в `/report` и отдельная вкладка
+  «API-потоки»; вкладка скрывается без данных.
 - **P2: call graph handler → outbound HTTP-кандидат** для Java/TS/Python:
   Spring/Feign/RestTemplate, Nest/axios/fetch, FastAPI/httpx/requests;
   artifact `syntax.outbound_calls`, `GET /api/runs/{id}/outbound-calls`.

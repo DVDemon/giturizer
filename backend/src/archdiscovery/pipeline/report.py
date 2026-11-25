@@ -294,10 +294,12 @@ def build_report(
     technologies: list[dict[str, Any]],
     api_specs: list[dict[str, Any]],
     deployment: dict[str, Any],
+    api_flows: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Собирает единый JSON-отчёт из уже извлечённых артефактов."""
     return {
         "technologies": [_technology_item(item) for item in technologies],
         "api": _build_api(api_specs),
         "deployment": _build_deployment(deployment),
+        "api_flows": api_flows or [],
     }

@@ -149,6 +149,7 @@ def execute_run(
                 if name in SYNTAX_LANGUAGES
             }
         )
+        api_flows: list[dict] = []
         if syntax_languages:
             try:
                 dispatcher = syntax_dispatch or dispatch_syntax_analyzer
@@ -162,6 +163,8 @@ def execute_run(
                     )
                 )
                 session.commit()
+                if isinstance(syntax_artifact, dict):
+                    api_flows = syntax_artifact.get("outbound_calls", [])
             except Exception as exc:  # noqa: BLE001 - сбой инструмента не валит пайплайн
                 warnings.append(f"syntax analyzer: {exc}")
 
@@ -257,6 +260,7 @@ def execute_run(
             technologies=tech_payload,
             api_specs=specs,
             deployment=deployment,
+            api_flows=api_flows,
         )
         session.add(
             ArchitectureSnapshot(

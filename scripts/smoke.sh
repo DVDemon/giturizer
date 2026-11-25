@@ -63,10 +63,11 @@ python3 - <<'PY'
 import json
 
 data = json.load(open("/tmp/smoke-report.json"))
-assert set(data) == {"technologies", "api", "deployment"}, data.keys()
+assert set(data) == {"technologies", "api", "deployment", "api_flows"}, data.keys()
 assert isinstance(data["technologies"], list)
 assert isinstance(data["api"], list)
 assert isinstance(data["deployment"], list)
+assert isinstance(data["api_flows"], list)
 print("technologies:", len(data["technologies"]),
       "| api services:", len(data["api"]),
       "| deployment methods:", [item["method"] for item in data["deployment"]])

@@ -42,7 +42,7 @@ make smoke
 - **Сканирование** — детали выбранного проекта: проект, статус, текущий этап,
   прогресс-бар, длительность, счётчики технологий/сервисов/API. Для активного
   запуска данные обновляются каждые 2.5 с; после завершения доступны вкладки:
-  **Обзор**, **C4**, **API**, **Технологии**, **Deployment**.
+  **Обзор**, **C4**, **API**, **API-потоки**, **Технологии**, **Deployment**.
   После завершения анализа верхняя плашка с прогрессом скрывается — остаются URL,
   статус и вкладки.
   **Обзор** — статистика запуска и раскрывающееся JSON-дерево отчёта с кнопкой
@@ -69,6 +69,11 @@ make smoke
 
 ![API-каталог](docs/assets/ui-api-catalog.png)
 
+**API-потоки** — кандидаты P2 «входная операция → цепочка вызовов → внешний HTTP-клиент».
+Вкладка скрывается, если потоков нет.
+
+![API-потоки](docs/assets/ui-api-flows.png)
+
 ![C4 Graphviz](docs/assets/ui-c4-graphviz.png)
 
 ### API
@@ -84,7 +89,7 @@ make smoke
 | GET | `/api/runs/{id}` | статус запуска |
 | GET | `/api/projects/{id}/runs` | запуски проекта |
 | GET | `/api/runs/{id}/results` | технологии, API, deployment, артефакты анализа |
-| GET | `/api/runs/{id}/report` | единый JSON-отчёт (`technologies`, `api`, `deployment`) |
+| GET | `/api/runs/{id}/report` | единый JSON-отчёт (`technologies`, `api`, `deployment`, `api_flows`) |
 | GET | `/api/runs/{id}/handlers` | endpoint → handler (Tree-sitter syntax-index) |
 | GET | `/api/runs/{id}/outbound-calls` | handler → outbound HTTP-кандидат (call graph P2) |
 | GET | `/api/runs/{id}/report?download=true` | скачать отчёт как файл |
@@ -100,7 +105,8 @@ make smoke
 {
   "technologies": [{"name": "Spring Boot", "type": "framework", "version": "3.3.0", "description": "pom.xml"}],
   "api": [{"service": "products-service", "methods": [{"operation": "GET /products", "description": "...", "technology": "OpenAPI"}]}],
-  "deployment": [{"method": "Docker Compose", "services": [{"name": "api", "image": "nginx", "image_version": "1.25", "ports": ["8080:80"], "dependencies": ["db"]}]}]
+  "deployment": [{"method": "Docker Compose", "services": [{"name": "api", "image": "nginx", "image_version": "1.25", "ports": ["8080:80"], "dependencies": ["db"]}]}],
+  "api_flows": [{"input": {"operation": "POST /orders", "handler": {"file": "Orders.java", "line": 42, "symbol": "create"}}, "path": [{"symbol": "create", "file": "Orders.java", "line": 42}], "output": {"callee": "restTemplate.exchange", "file": "Orders.java", "line": 57, "urls": ["/api/v1/invoices"], "kind": "http"}, "confidence": 0.75, "status": "partial"}]
 }
 ```
 

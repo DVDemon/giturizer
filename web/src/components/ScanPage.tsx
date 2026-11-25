@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { formatDate, formatDuration, stageLabel, statusLabel } from "../format";
 import type { C4Model, Project, Run, RunReport, RunResults } from "../types";
+import { ApiFlowsPanel } from "./ApiFlowsPanel";
 import { ApiView } from "./ApiView";
 import { C4View } from "./C4View";
 import { DeploymentView } from "./DeploymentView";
@@ -10,7 +11,7 @@ import { OverviewPanel } from "./OverviewPanel";
 import { StatusBadge } from "./StatusBadge";
 import { TechTable } from "./TechTable";
 
-type Tab = "overview" | "c4" | "api" | "tech" | "deployment";
+type Tab = "overview" | "c4" | "api" | "flows" | "tech" | "deployment";
 
 function initialTab(): Tab {
   return new URLSearchParams(window.location.search).has("op") ? "api" : "overview";
@@ -20,6 +21,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "overview", label: "Обзор" },
   { id: "c4", label: "C4" },
   { id: "api", label: "API" },
+  { id: "flows", label: "API-потоки" },
   { id: "tech", label: "Технологии" },
   { id: "deployment", label: "Deployment" },
 ];
@@ -195,6 +197,9 @@ export function ScanPage({ projectId, onBack }: Props) {
     if (item.id === "deployment") {
       return hasDeploymentData(report, results);
     }
+    if (item.id === "flows") {
+      return Boolean(report?.api_flows.length);
+    }
     return true;
   });
   const effectiveTab = visibleTabs.some((item) => item.id === tab)
@@ -365,6 +370,8 @@ export function ScanPage({ projectId, onBack }: Props) {
                 <C4View runId={activeRun.id} model={c4Model} />
               ) : effectiveTab === "api" ? (
                 <ApiView specs={results.api_specs} />
+              ) : effectiveTab === "flows" ? (
+                <ApiFlowsPanel flows={report?.api_flows ?? []} />
               ) : effectiveTab === "tech" ? (
                 <TechTable technologies={results.technologies} runId={activeRun.id} />
               ) : (

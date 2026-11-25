@@ -167,7 +167,7 @@ def test_results_endpoint(client: TestClient, session: Session, tmp_path: Path) 
     report = client.get(f"/api/runs/{run['id']}/report")
     assert report.status_code == 200
     payload = report.json()
-    assert set(payload) == {"technologies", "api", "deployment"}
+    assert set(payload) == {"technologies", "api", "deployment", "api_flows"}
     assert payload["technologies"]
     assert payload["api"]
     assert payload["deployment"]
