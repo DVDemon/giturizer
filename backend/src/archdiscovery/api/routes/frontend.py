@@ -31,6 +31,8 @@ def get_frontend(
             "available": False,
             "frontends": [],
             "api_calls": [],
+            "routes": [],
+            "ui_flows": [],
             "stats": {},
             "errors": [],
         }
@@ -39,6 +41,8 @@ def get_frontend(
         "available": True,
         "frontends": content.get("frontends", []),
         "api_calls": content.get("api_calls", []),
+        "routes": content.get("routes", []),
+        "ui_flows": content.get("ui_flows", []),
         "stats": content.get("stats", {}),
         "errors": content.get("errors", []),
     }

@@ -78,3 +78,60 @@ def test_frontend_endpoint(client, session) -> None:
     body = response.json()
     assert body["available"] is True
     assert body["api_calls"][0]["normalized_path"] == "/api/v1/user"
+
+
+def test_react_router_page_hook_api_flow(tmp_path: Path) -> None:
+    (tmp_path / "package.json").write_text(
+        '{"dependencies":{"react":"18.0.0","react-dom":"18.0.0"}}',
+        encoding="utf-8",
+    )
+    (tmp_path / "src" / "api" / "user").mkdir(parents=True)
+    (tmp_path / "src" / "api" / "queries").mkdir(parents=True)
+    (tmp_path / "src" / "pages" / "users").mkdir(parents=True)
+    (tmp_path / "src" / "router").mkdir(parents=True)
+    (tmp_path / "src" / "api" / "const.ts").write_text(
+        "const PREFIX_GATEWAY = '/api-gateway/';\n"
+        "export const GATEWAY_URL = IS_DEV ? GATEWAY_DIRECT_LINK : PREFIX_GATEWAY;\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "src" / "api" / "user" / "index.ts").write_text(
+        "import Api from 'utils/api/axiosWrapper';\n"
+        "import { GATEWAY_URL } from '../const';\n"
+        "export const getUser = () => Api.get({ url: `${GATEWAY_URL}auth/v1/user` });\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "src" / "api" / "queries" / "user.ts").write_text(
+        "import { useQuery } from '@tanstack/react-query';\n"
+        "import { getUser } from 'api/user';\n"
+        "export const useUser = () => useQuery({ queryFn: () => getUser() });\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "src" / "pages" / "users" / "index.tsx").write_text(
+        "import { useUser } from 'api/queries/user';\n"
+        "export const UsersPage = () => { const { data } = useUser(); return null; };\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "src" / "router" / "index.tsx").write_text(
+        "import { Route } from 'react-router-dom';\n"
+        "import { UsersPage } from 'pages/users';\n"
+        'export const Router = () => <Route path="/users" element={<UsersPage />} />;\n',
+        encoding="utf-8",
+    )
+
+    result = analyze_frontend(tmp_path, tmp_path / "frontend.json")
+
+    assert result["routes"] == [
+        {
+            "path": "/users",
+            "component": "UsersPage",
+            "file": "src/router/index.tsx",
+            "line": 3,
+            "component_file": "src/pages/users/index.tsx",
+        }
+    ]
+    assert len(result["ui_flows"]) == 1
+    calls = result["ui_flows"][0]["calls"]
+    assert len(calls) == 1
+    assert calls[0]["normalized_path"] == "/api/v1/user"
+    assert calls[0]["service"] == "fdm-auth"
+    assert result["stats"]["routes"] == 1

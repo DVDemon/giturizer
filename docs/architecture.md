@@ -136,7 +136,8 @@ flowchart LR
 4. **Language analysis** — по обнаруженным языкам `worker` последовательно ставит задачи в очередь
    `analyzers`; контейнер `analyzer` выполняет соответствующие инструменты над клоном:
    - Java / TypeScript / Python / C++ POCO → **Tree-sitter syntax-index** (endpoint → handler, call graph, outbound calls, source ranges);
-   - React frontend → **Tree-sitter API index** (Api/axios/fetch, gateway prefixes, service mapping);
+   - React frontend → **Tree-sitter API index** (Api/axios/fetch, gateway prefixes,
+     React Router, page → hook → API flows);
      подробно: [api-flow-resolution.md](api-flow-resolution.md);
    - Java / Kotlin / C# / TS/JS / Python / Go → **ArchGuard scanner** (Java-фичи apicalls/datamap:
      services map, API, database map; классы и модули). Анализаторы предзагружены в образ,

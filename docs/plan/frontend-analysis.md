@@ -1,6 +1,6 @@
 # План анализа React-фронтенда
 
-- **Статус:** Phase 1 — реализован, Phase 2 — следующий этап
+- **Статус:** Phase 1–2 реализованы, Phase 3 — следующий этап
 - **Дата:** 2026-11-25
 - **Связанные документы:** [api-flow-analysis.md](api-flow-analysis.md), [api-flow-resolution.md](../api-flow-resolution.md)
 
@@ -64,6 +64,9 @@ Neo4j и внутренние вызовы сервисов. Он дополня
 **Не входит:** React Router, hooks, component graph, UI journeys.
 
 Phase 1 реализован: artifact `frontend`, `GET /api/runs/{id}/frontend`.
+
+Phase 2 реализован: React Router routes, page component map и
+`ui_flows` (page → hook → API). На Bee: 80 routes, 67 с API-вызовами.
 
 Результат на `services/prospect-frontend` BeeAtlas:
 

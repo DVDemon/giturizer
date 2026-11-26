@@ -10,6 +10,8 @@ from typing import Any
 from tree_sitter import Node
 from tree_sitter_language_pack import get_parser
 
+from archdiscovery.analyzer.frontend.routes import build_ui_flows
+
 EXCLUDED_DIRS = {
     ".git",
     "node_modules",
@@ -73,6 +75,30 @@ PREFIX_SERVICE = {
 
 def _text(node: Node, source: bytes) -> str:
     return source[node.start_byte : node.end_byte].decode("utf-8", "replace")
+
+
+def _enclosing_function(node: Node, source: bytes) -> str:
+    current = node.parent
+    while current is not None:
+        if current.type in {"function_declaration", "method_definition"}:
+            name = current.child_by_field_name("name")
+            if name is not None:
+                return _text(name, source)
+        if current.type == "variable_declarator":
+            name = current.child_by_field_name("name")
+            value = current.child_by_field_name("value")
+            if (
+                name is not None
+                and value is not None
+                and value.type
+                in {
+                    "arrow_function",
+                    "function_expression",
+                }
+            ):
+                return _text(name, source)
+        current = current.parent
+    return ""
 
 
 def _frontend_roots(repo: Path) -> list[Path]:
@@ -206,6 +232,7 @@ def _calls(path: Path, root: Path, prefixes: dict[str, str]) -> list[dict[str, A
                             "normalized_path": service_path,
                             "service": service,
                             "source": source_kind,
+                            "function": _enclosing_function(node, source),
                             "confidence": 0.85,
                         }
                     )
@@ -255,18 +282,31 @@ def analyze_frontend(
                 )
     # дедупликация запросов
     unique: dict[tuple, dict[str, Any]] = {}
+    calls_by_file: dict[str, list[dict[str, Any]]] = {}
     for call in calls:
         key = (call["file"], call["line"], call["method"], call["url_template"])
         unique.setdefault(key, call)
+        calls_by_file.setdefault(call["file"], []).append(call)
     calls = list(unique.values())
+    routes: list[dict[str, Any]] = []
+    ui_flows: list[dict[str, Any]] = []
+    for frontend in frontends:
+        root = repo_path / frontend["root"]
+        frontend_routes, frontend_flows = build_ui_flows(root, calls_by_file)
+        routes.extend(frontend_routes)
+        ui_flows.extend(frontend_flows)
     result = {
         "tool": "tree-sitter",
         "frontends": frontends,
         "api_calls": calls,
+        "routes": routes,
+        "ui_flows": ui_flows,
         "stats": {
             "frontends": len(frontends),
             "files": sum(len(_files(Path(repo_path) / frontend["root"])) for frontend in frontends),
             "api_calls": len(calls),
+            "routes": len(routes),
+            "ui_flows": len(ui_flows),
         },
         "errors": errors,
     }
