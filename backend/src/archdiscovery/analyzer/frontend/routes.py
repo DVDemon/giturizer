@@ -328,12 +328,6 @@ def _collect_component_calls(
             if callee in imports:
                 target, original = imports[callee]
                 target_function = original or callee
-                target_rel = str(target.relative_to(root))
-                target_calls = [
-                    c
-                    for c in calls_by_file.get(target_rel, [])
-                    if c.get("function") == target_function
-                ]
                 # Если функция не распознана как API-функция, не тянем весь модуль.
                 result.extend(collect(target, target_function, depth + 1, visited))
             elif callee in local_functions:
