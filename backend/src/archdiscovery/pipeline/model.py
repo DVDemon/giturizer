@@ -2,6 +2,7 @@
 
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 
 
 @dataclass
@@ -111,6 +112,23 @@ def _endpoint_protocol(service: dict) -> tuple[str | None, str | None, str | Non
     return "HTTP", "TCP", _container_port(service)
 
 
+def _service_source_key(service: dict, compose_file: str) -> str:
+    """Ключ идентичности контейнера: build source или image."""
+    if service.get("build_source"):
+        return f"build:{service['build_source']}"
+    context = service.get("build_context")
+    dockerfile = service.get("dockerfile")
+    if context is not None or dockerfile is not None:
+        compose_dir = Path(compose_file).parent if compose_file else Path(".")
+        context_path = compose_dir / (context or ".")
+        dockerfile_path = context_path / (dockerfile or "Dockerfile")
+        return f"build:{context_path}:{dockerfile_path}"
+    image = service.get("image")
+    if image:
+        return f"image:{image}"
+    return f"service:{service.get('name')}"
+
+
 def build_model(
     *,
     project_name: str,
@@ -139,35 +157,44 @@ def build_model(
     )
 
     compose_services: list[dict] = []
+    built_entries: list[tuple[dict, str]] = []
+    external: list[dict] = []
     for compose in deployment.get("compose", []) or []:
-        compose_services.extend(compose.get("services", []))
-
-    built = [
-        service
-        for service in compose_services
-        if service.get("build_context") or service.get("dockerfile")
-    ]
-    external = [
-        service
-        for service in compose_services
-        if not (service.get("build_context") or service.get("dockerfile")) and service.get("image")
-    ]
+        compose_file = str(compose.get("file") or "")
+        for service in compose.get("services", []):
+            compose_services.append(service)
+            if service.get("build_context") or service.get("dockerfile"):
+                built_entries.append((service, compose_file))
+            elif service.get("image"):
+                external.append(service)
 
     containers: list[Element] = []
-    if built:
-        for service in built:
-            containers.append(
-                Element(
-                    id=f"container-{slug(service['name'])}",
-                    name=service["name"],
-                    type="container",
-                    description="Deployed via docker-compose",
-                    technology=default_technology or "Docker",
-                    tags=["Element", "Container"],
-                    parent_id=system_id,
-                )
+    service_element: dict[str, str] = {}
+    seen_sources: dict[str, Element] = {}
+    for service, compose_file in built_entries:
+        source_key = _service_source_key(service, compose_file)
+        container = seen_sources.get(source_key)
+        if container is None:
+            base_id = f"container-{slug(service['name'])}"
+            container_id = base_id
+            index = 2
+            while any(item.id == container_id for item in containers):
+                container_id = f"{base_id}-{index}"
+                index += 1
+            container = Element(
+                id=container_id,
+                name=service["name"],
+                type="container",
+                description="Deployed via docker-compose",
+                technology=default_technology or "Docker",
+                tags=["Element", "Container"],
+                parent_id=system_id,
             )
-    elif deployment.get("dockerfiles"):
+            containers.append(container)
+            seen_sources[source_key] = container
+        service_element[slug(service["name"])] = container.id
+
+    if not containers and deployment.get("dockerfiles"):
         seen: set[str] = set()
         for dockerfile in deployment["dockerfiles"]:
             directory = dockerfile["file"].rsplit("/", 1)[0] if "/" in dockerfile["file"] else "."
@@ -200,18 +227,24 @@ def build_model(
         )
     model.elements.extend(containers)
 
+    seen_external: dict[str, Element] = {}
     for service in external:
         image = service.get("image") or ""
-        model.elements.append(
-            Element(
-                id=f"external-{slug(service['name'])}",
-                name=service["name"],
+        name = service["name"]
+        key = slug(name) or image
+        element = seen_external.get(key)
+        if element is None:
+            element = Element(
+                id=f"external-{slug(name)}",
+                name=name,
                 type="softwareSystem",
                 description=image,
                 technology=image,
                 tags=["Element", "Software System", "external", _external_kind(image)],
             )
-        )
+            model.elements.append(element)
+            seen_external[key] = element
+        service_element[slug(name)] = element.id
 
     container_by_slug = {
         container.id.removeprefix("container-"): container.id for container in containers
@@ -249,17 +282,6 @@ def build_model(
             )
         )
         group_element[group] = component_id
-
-    service_element: dict[str, str] = {
-        slug(container.name): container.id for container in containers
-    }
-    service_element.update(
-        {
-            slug(element.name): element.id
-            for element in model.elements
-            if element.type == "softwareSystem" and "external" in element.tags
-        }
-    )
 
     relation_counter = 0
 
@@ -325,26 +347,26 @@ def build_model(
             seen_pairs.add((source, target))
             add_relationship(source, target, "includes", "C++ include", protocol="include")
 
-    if built:
+    if built_entries:
         node = DeploymentNode(
             id="dep-docker-compose",
             name="Docker Compose",
             environment="Production",
             description="docker-compose services",
         )
-        for index, service in enumerate(built, start=1):
-            element = next(
-                (container for container in containers if container.name == service["name"]),
-                None,
-            )
-            if element is not None:
-                node.instances.append(
-                    ContainerInstance(
-                        id=f"dc-instance-{index}",
-                        container_id=element.id,
-                        name=service["name"],
-                    )
+        seen_instances: set[str] = set()
+        for service, _compose_file in built_entries:
+            instance_container_id = service_element.get(slug(service["name"]))
+            if instance_container_id is None or instance_container_id in seen_instances:
+                continue
+            seen_instances.add(instance_container_id)
+            node.instances.append(
+                ContainerInstance(
+                    id=f"dc-instance-{len(seen_instances)}",
+                    container_id=instance_container_id,
+                    name=service["name"],
                 )
+            )
         if node.instances:
             model.deployment_nodes.append(node)
 

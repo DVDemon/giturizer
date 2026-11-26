@@ -34,6 +34,7 @@
 | [0024](0024-outbound-callgraph.md) | Call graph handler → outbound API | Принято |
 | [0025](0025-external-services-flow.md) | Не-HTTP внешние вызовы в API flow | Принято |
 | [0026](0026-poco-cpp.md) | C++/POCO в API-flow | Принято |
+| [0027](0027-container-dedupe.md) | Дедупликация контейнеров C4 по build source | Принято |
 
 ## Шаблон записи
 

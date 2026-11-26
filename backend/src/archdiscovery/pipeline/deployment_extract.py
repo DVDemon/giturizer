@@ -42,7 +42,28 @@ def _parse_dockerfile(path: Path, relative: str) -> dict:
     }
 
 
-def _parse_compose(document: dict, relative: str) -> dict:
+def _normalize_build_source(
+    repo_path: Path, relative: str, context: str | None, dockerfile: str | None
+) -> tuple[str | None, str | None]:
+    if context is None and dockerfile is None:
+        return None, None
+    compose_dir = (repo_path / relative).parent
+    raw_context = context or "."
+    context_path = (compose_dir / raw_context).resolve()
+    try:
+        context_rel = str(context_path.relative_to(repo_path.resolve()))
+    except ValueError:
+        context_rel = str(context_path)
+    raw_dockerfile = dockerfile or "Dockerfile"
+    dockerfile_path = (context_path / raw_dockerfile).resolve()
+    try:
+        dockerfile_rel = str(dockerfile_path.relative_to(repo_path.resolve()))
+    except ValueError:
+        dockerfile_rel = str(dockerfile_path)
+    return context_rel, dockerfile_rel
+
+
+def _parse_compose(document: dict, relative: str, repo_path: Path) -> dict:
     services = document.get("services") or {}
     nodes: list[dict] = []
     edges: list[dict] = []
@@ -59,12 +80,22 @@ def _parse_compose(document: dict, relative: str) -> dict:
         depends = config.get("depends_on") or []
         if isinstance(depends, dict):
             depends = list(depends.keys())
+        context_rel, dockerfile_rel = _normalize_build_source(
+            repo_path, relative, context, dockerfile
+        )
         nodes.append(
             {
                 "name": name,
                 "image": config.get("image"),
                 "build_context": context,
                 "dockerfile": dockerfile,
+                "build_context_normalized": context_rel,
+                "dockerfile_normalized": dockerfile_rel,
+                "build_source": (
+                    f"{context_rel}:{dockerfile_rel}"
+                    if context_rel is not None and dockerfile_rel is not None
+                    else None
+                ),
                 "ports": [str(port) for port in config.get("ports", []) or []],
                 "depends_on": list(depends),
             }
@@ -197,7 +228,7 @@ def extract_deployment(repo_path: Path) -> dict:
         if name in {"compose.yaml", "compose.yml", "docker-compose.yaml", "docker-compose.yml"}:
             document = _load_yaml(path)
             if isinstance(document, dict):
-                result["compose"].append(_parse_compose(document, relative))
+                result["compose"].append(_parse_compose(document, relative, repo_path))
         elif name == "dockerfile" or name.startswith("dockerfile.") or name == "containerfile":
             result["dockerfiles"].append(_parse_dockerfile(path, relative))
         elif name == "chart.yaml":

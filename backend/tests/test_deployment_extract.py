@@ -120,3 +120,21 @@ def test_extracts_helm_and_gitlab_ci(tmp_path: Path) -> None:
     assert set(ci["jobs"]) == {"build", "deploy"}
     assert ci["images"] == ["python:3.12"]
     assert model["summary"]["helm_charts"] == 1
+
+
+def test_normalizes_build_source_across_compose_files(tmp_path: Path) -> None:
+    (tmp_path / "docker-compose.yml").write_text(
+        "services:\n  app:\n    build:\n      context: ./services/app\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "services" / "app").mkdir(parents=True)
+    (tmp_path / "services" / "app" / "docker-compose.yml").write_text(
+        "services:\n  app-local:\n    build: .\n",
+        encoding="utf-8",
+    )
+
+    result = extract_deployment(tmp_path)
+    services = [service for compose in result["compose"] for service in compose["services"]]
+    sources = {service["build_source"] for service in services}
+    assert len(sources) == 1
+    assert "services/app/Dockerfile" in sources.pop()

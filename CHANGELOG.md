@@ -4,6 +4,8 @@
 
 ### Added
 
+- **C4: дедупликация контейнеров** по нормализованному build context/Dockerfile;
+  корневой и сервисный compose больше не создают два одинаковых контейнера.
 - **React frontend Phase 2**: React Router, page component map,
   `ui_flows` page → hook → API; Bee: 80 routes, 67 с вызовами.
 - **React frontend API index (Phase 1)**: artifact `frontend`,

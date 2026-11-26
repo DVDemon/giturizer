@@ -103,3 +103,52 @@ def test_endpoint_protocol_inference() -> None:
         "TCP",
         "8080",
     )
+
+
+def test_deduplicates_containers_by_build_source() -> None:
+    deployment = {
+        "compose": [
+            {
+                "file": "docker-compose.yml",
+                "services": [
+                    {
+                        "name": "app",
+                        "image": None,
+                        "build_context": "./services/app",
+                        "dockerfile": "Dockerfile",
+                        "build_source": "services/app/Dockerfile",
+                        "ports": [],
+                        "depends_on": [],
+                    }
+                ],
+            },
+            {
+                "file": "services/app/docker-compose.yml",
+                "services": [
+                    {
+                        "name": "app-local",
+                        "image": None,
+                        "build_context": ".",
+                        "dockerfile": "Dockerfile",
+                        "build_source": "services/app/Dockerfile",
+                        "ports": ["8080:8080"],
+                        "depends_on": [],
+                    }
+                ],
+            },
+        ],
+        "dockerfiles": [],
+        "kubernetes": [],
+    }
+
+    model = build_model(
+        project_name="dedupe",
+        technologies=[],
+        api_specs=[],
+        deployment=deployment,
+        cpp_artifact=None,
+    )
+
+    containers = [element for element in model.elements if element.type == "container"]
+    assert [container.name for container in containers] == ["app"]
+    assert len(model.deployment_nodes[0].instances) == 1
