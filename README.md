@@ -97,7 +97,7 @@ make smoke
 | POST | `/api/projects/{id}/runs` | запустить анализ (`202`, `status=queued`) |
 | GET | `/api/runs/{id}` | статус запуска |
 | GET | `/api/projects/{id}/runs` | запуски проекта |
-| GET | `/api/runs/{id}/results` | технологии, API, deployment, артефакты анализа |
+| GET | `/api/runs/{id}/results` | технологии, API, deployment, артефакты анализа; syntax handlers добавляются в API |
 | GET | `/api/runs/{id}/report` | единый JSON-отчёт (`technologies`, `api`, `deployment`, `api_flows`) |
 | GET | `/api/runs/{id}/handlers` | endpoint → handler (Tree-sitter syntax-index) |
 | GET | `/api/runs/{id}/outbound-calls` | handler → outbound HTTP-кандидат (call graph P2) |

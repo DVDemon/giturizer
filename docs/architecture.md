@@ -271,7 +271,8 @@ artifacts(id, run_id, kind, path, content bytea/text)          -- syntax.json, c
   протокол и транспорт (`HTTP · TCP:8080`); вкладка скрывается, если на диаграмме
   остаётся один прямоугольник. Контейнеры дедуплицируются по нормализованному
   build source (context + Dockerfile), см. ADR-0027.
-- **API-каталог** — единый поиск/фильтры по всем операциям (OpenAPI/annotations/gRPC/GraphQL),
+- **API-каталог** — единый поиск/фильтры по всем операциям
+  (включая syntax handlers для C++/POCO) (OpenAPI/annotations/gRPC/GraphQL),
   панель деталей и deep links без конфликта с hash-роутингом; вкладка скрывается,
   если API не найдены.
 - Вкладка **Deployment** скрывается, если нет данных о развёртывании.

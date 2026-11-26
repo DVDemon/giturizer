@@ -150,7 +150,7 @@ export function buildCatalog(specs: ApiSpec[]): ApiCatalog {
         }
       }
     } else if (spec.kind === "annotations") {
-      const service = serviceFromSource(spec.name);
+      const service = String(raw.service || serviceFromSource(spec.name));
       const source = String(raw.file ?? spec.name);
       const framework = raw.framework ? String(raw.framework) : undefined;
       for (const endpoint of asArray(raw.endpoints)) {

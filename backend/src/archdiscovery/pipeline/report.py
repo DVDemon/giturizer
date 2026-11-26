@@ -90,7 +90,7 @@ def _build_api(specs: list[dict[str, Any]]) -> list[dict[str, Any]]:
                         ),
                     )
         elif kind == "annotations":
-            service = _service_from_source(name)
+            service = str(raw.get("service") or _service_from_source(name))
             framework = str(raw.get("framework") or "annotations")
             source = str(raw.get("file") or name)
             for endpoint in raw.get("endpoints") or []:
@@ -122,7 +122,7 @@ def _build_api(specs: list[dict[str, Any]]) -> list[dict[str, Any]]:
                         ),
                     )
         elif kind == "graphql":
-            service = _service_from_source(name)
+            service = str(raw.get("service") or _service_from_source(name))
             for operation in raw.get("operations") or []:
                 if not isinstance(operation, dict) or not operation.get("operation"):
                     continue

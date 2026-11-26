@@ -79,6 +79,8 @@
 
 ### Fixed
 
+- API-вкладка для C++/POCO: syntax handlers теперь попадают в `api_specs`
+  и `/report.api`; старый запуск получает их лениво, без повторного анализа.
 - Spring `@*Mapping(path=...)`/`produces`: потерянные NFR/import/export endpoints
   и ложные `/application/json` пути; C++/Neo4j теперь классифицируется.
 - Конфликт hash-роутинга приложения и Redoc-ссылок (`#tag/...`) устранён:

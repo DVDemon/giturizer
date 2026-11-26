@@ -8,11 +8,17 @@ from archdiscovery.db.models import (
     ApiSpec,
     ArchitectureSnapshot,
     DeploymentModel,
+    Project,
     RunArtifact,
     TechRegistry,
 )
 from archdiscovery.pipeline.report import build_report
 from archdiscovery.services.errors import NotFoundError
+from archdiscovery.services.syntax_api import (
+    load_syntax_handlers,
+    merge_into_report,
+    syntax_specs,
+)
 
 
 def get_run_report(session: Session, run_id: Any) -> dict[str, Any]:
@@ -35,13 +41,17 @@ def get_run_report(session: Session, run_id: Any) -> dict[str, Any]:
         if syntax_artifact is not None and isinstance(syntax_artifact.content, dict)
         else []
     )
+    project = session.get(Project, run.project_id)
+    service_name = project.name if project else "application"
+    handlers = load_syntax_handlers(session, run_id)
     if snapshot is not None and snapshot.report:
         report = dict(snapshot.report)
         report["api_flows"] = api_flows
-        if report != snapshot.report:
-            snapshot.report = report
+        merged = merge_into_report(report, handlers, service_name)
+        if merged != snapshot.report:
+            snapshot.report = merged
             session.commit()
-        return report
+        return merged
 
     tech_registry = session.scalars(
         select(TechRegistry)
@@ -55,9 +65,17 @@ def get_run_report(session: Session, run_id: Any) -> dict[str, Any]:
         select(DeploymentModel).where(DeploymentModel.run_id == run_id)
     ).first()
 
+    existing_specs = [
+        {"kind": spec.kind, "name": spec.name, "spec": spec.spec} for spec in api_specs
+    ]
+    syntax_specs_from_handlers = syntax_specs(
+        handlers,
+        service_name,
+        existing_specs,
+    )
     report = build_report(
         technologies=tech_registry.technologies if tech_registry else [],
-        api_specs=[{"kind": spec.kind, "name": spec.name, "spec": spec.spec} for spec in api_specs],
+        api_specs=[*existing_specs, *syntax_specs_from_handlers],
         deployment=deployment_model.model if deployment_model else {},
         api_flows=api_flows,
     )

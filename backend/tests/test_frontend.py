@@ -135,3 +135,58 @@ def test_react_router_page_hook_api_flow(tmp_path: Path) -> None:
     assert calls[0]["normalized_path"] == "/api/v1/user"
     assert calls[0]["service"] == "fdm-auth"
     assert result["stats"]["routes"] == 1
+
+
+def test_syntax_handlers_become_api_specs(client, session) -> None:
+    from archdiscovery.db.models import AnalysisRun, Project, RunArtifact
+
+    project = Project(name="poco", repo_url="https://github.com/o/r", provider="github")
+    session.add(project)
+    session.commit()
+    session.refresh(project)
+    run = AnalysisRun(project_id=project.id)
+    session.add(run)
+    session.commit()
+    session.refresh(run)
+    session.add(
+        RunArtifact(
+            run_id=run.id,
+            kind="syntax",
+            path="",
+            content={
+                "handlers": [
+                    {
+                        "method": "POST",
+                        "path": "/users",
+                        "framework": "POCO",
+                        "handler": {"file": "src/main.cpp", "line": 1, "symbol": "createUser"},
+                    }
+                ],
+                "outbound_calls": [],
+                "stats": {},
+                "errors": [],
+            },
+        )
+    )
+    session.commit()
+
+    results = client.get(f"/api/runs/{run.id}/results")
+    assert results.status_code == 200
+    specs = results.json()["api_specs"]
+    assert specs[0]["spec"]["service"] == "poco"
+    assert specs[0]["spec"]["endpoints"] == [{"method": "POST", "path": "/users"}]
+
+    report = client.get(f"/api/runs/{run.id}/report")
+    assert report.status_code == 200
+    assert report.json()["api"] == [
+        {
+            "service": "poco",
+            "methods": [
+                {
+                    "operation": "POST /users",
+                    "description": "Найдено в src/main.cpp (POCO)",
+                    "technology": "POCO",
+                }
+            ],
+        }
+    ]
