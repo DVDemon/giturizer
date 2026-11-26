@@ -193,8 +193,6 @@ def build_model(
     cpp_artifact: dict | None,
 ) -> ArchitectureModel:
     system_id = f"sys-{slug(project_name)}"
-    tech_names = {item.get("name") for item in technologies}
-    cpp = "C++" in tech_names
     language_names = sorted(
         {
             str(item.get("name"))
