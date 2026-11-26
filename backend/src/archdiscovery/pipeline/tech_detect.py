@@ -18,6 +18,7 @@ IGNORED_DIRS = {
     ".venv",
     "venv",
     "__pycache__",
+    "poc",
 }
 
 CPP_EXTENSIONS = {".cpp", ".cc", ".cxx", ".hpp", ".hh", ".h"}

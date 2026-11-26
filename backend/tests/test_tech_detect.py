@@ -37,3 +37,15 @@ def test_detects_contract_languages(tmp_path: Path) -> None:
     names = {technology.name for technology in detect_technologies(tmp_path)}
 
     assert {"Protocol Buffers", "GraphQL"} <= names
+
+
+def test_ignores_poc_fixtures_for_production_technologies(tmp_path: Path) -> None:
+    (tmp_path / "main.py").write_text("print('ok')\n", encoding="utf-8")
+    fixture = tmp_path / "poc" / "api-flow" / "fixtures" / "cpp" / "order.cpp"
+    fixture.parent.mkdir(parents=True)
+    fixture.write_text("int main() { return 0; }\n", encoding="utf-8")
+
+    names = {technology.name for technology in detect_technologies(tmp_path)}
+
+    assert "Python" in names
+    assert "C++" not in names
