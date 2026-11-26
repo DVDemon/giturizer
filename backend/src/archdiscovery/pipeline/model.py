@@ -129,6 +129,61 @@ def _service_source_key(service: dict, compose_file: str) -> str:
     return f"service:{service.get('name')}"
 
 
+BASE_IMAGE_TECHNOLOGIES = (
+    ("python", "Python"),
+    ("node", "JavaScript/TypeScript"),
+    ("openjdk", "Java"),
+    ("temurin", "Java"),
+    ("golang", "Go"),
+    ("dotnet", "C#"),
+    ("gcc", "C++"),
+    ("clang", "C++"),
+    ("rust", "Rust"),
+)
+
+
+def _dockerfile_entry(
+    service: dict,
+    compose_file: str,
+    deployment: dict,
+) -> dict | None:
+    source = service.get("build_source")
+    if source:
+        for item in deployment.get("dockerfiles", []):
+            if item.get("file") == source:
+                return item
+    context = service.get("build_context")
+    if context is None and service.get("dockerfile") is None:
+        return None
+    compose_dir = Path(compose_file).parent if compose_file else Path(".")
+    candidate = str(compose_dir / (context or ".") / (service.get("dockerfile") or "Dockerfile"))
+    return next(
+        (item for item in deployment.get("dockerfiles", []) if item.get("file") == candidate),
+        None,
+    )
+
+
+def _container_technology(
+    service: dict,
+    compose_file: str,
+    deployment: dict,
+    language_names: list[str],
+) -> str:
+    entry = _dockerfile_entry(service, compose_file, deployment)
+    if entry:
+        for base_image in entry.get("base_images", []):
+            lowered = str(base_image).lower()
+            for marker, technology in BASE_IMAGE_TECHNOLOGIES:
+                if marker in lowered:
+                    return technology
+    context = str(service.get("build_context") or service.get("name") or "").lower()
+    if any(marker in context for marker in ("web", "frontend", "ui")):
+        return "JavaScript/TypeScript"
+    if len(language_names) == 1:
+        return language_names[0]
+    return "Docker"
+
+
 def build_model(
     *,
     project_name: str,
@@ -140,7 +195,14 @@ def build_model(
     system_id = f"sys-{slug(project_name)}"
     tech_names = {item.get("name") for item in technologies}
     cpp = "C++" in tech_names
-    default_technology = "C++" if cpp else None
+    language_names = sorted(
+        {
+            str(item.get("name"))
+            for item in technologies
+            if item.get("kind") == "language" and item.get("name")
+        }
+    )
+    default_technology = language_names[0] if len(language_names) == 1 else None
 
     model = ArchitectureModel(
         name=project_name,
@@ -186,7 +248,7 @@ def build_model(
                 name=service["name"],
                 type="container",
                 description="Deployed via docker-compose",
-                technology=default_technology or "Docker",
+                technology=_container_technology(service, compose_file, deployment, language_names),
                 tags=["Element", "Container"],
                 parent_id=system_id,
             )

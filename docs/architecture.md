@@ -270,7 +270,8 @@ artifacts(id, run_id, kind, path, content bytea/text)          -- syntax.json, c
   зависимостями, плюс переключатель на **Mermaid**. На связях отображаются прикладной
   протокол и транспорт (`HTTP · TCP:8080`); вкладка скрывается, если на диаграмме
   остаётся один прямоугольник. Контейнеры дедуплицируются по нормализованному
-  build source (context + Dockerfile), см. ADR-0027.
+  build source (context + Dockerfile), см. ADR-0027. Технология контейнера
+  определяется по base image его Dockerfile, а не по языку всего репозитория.
 - **API-каталог** — единый поиск/фильтры по всем операциям
   (включая syntax handlers для C++/POCO) (OpenAPI/annotations/gRPC/GraphQL),
   панель деталей и deep links без конфликта с hash-роутингом; вкладка скрывается,

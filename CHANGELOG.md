@@ -79,6 +79,8 @@
 
 ### Fixed
 
+- C4: технология контейнера определяется по Dockerfile/base image, а не
+  глобальным C++/Python; polyglot-репозитории больше не окрашивают всё в C++.
 - API-вкладка для C++/POCO: syntax handlers теперь попадают в `api_specs`
   и `/report.api`; старый запуск получает их лениво, без повторного анализа.
 - Spring `@*Mapping(path=...)`/`produces`: потерянные NFR/import/export endpoints

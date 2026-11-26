@@ -152,3 +152,53 @@ def test_deduplicates_containers_by_build_source() -> None:
     containers = [element for element in model.elements if element.type == "container"]
     assert [container.name for container in containers] == ["app"]
     assert len(model.deployment_nodes[0].instances) == 1
+
+
+def test_container_technology_is_inferred_per_build_context() -> None:
+    deployment = {
+        "compose": [
+            {
+                "file": "docker-compose.yml",
+                "services": [
+                    {
+                        "name": "api",
+                        "image": None,
+                        "build_context": "./backend",
+                        "dockerfile": "Dockerfile.api",
+                        "ports": [],
+                        "depends_on": [],
+                    },
+                    {
+                        "name": "web",
+                        "image": None,
+                        "build_context": "./web",
+                        "dockerfile": "Dockerfile",
+                        "ports": [],
+                        "depends_on": [],
+                    },
+                ],
+            }
+        ],
+        "dockerfiles": [
+            {"file": "backend/Dockerfile.api", "base_images": ["python:3.12-slim"]},
+            {"file": "web/Dockerfile", "base_images": ["node:20-alpine", "nginx:alpine"]},
+        ],
+        "kubernetes": [],
+    }
+    model = build_model(
+        project_name="polyglot",
+        technologies=[
+            {"name": "C++", "kind": "language"},
+            {"name": "Python", "kind": "language"},
+            {"name": "JavaScript/TypeScript", "kind": "language"},
+        ],
+        api_specs=[],
+        deployment=deployment,
+        cpp_artifact=None,
+    )
+    tech = {
+        element.name: element.technology
+        for element in model.elements
+        if element.type == "container"
+    }
+    assert tech == {"api": "Python", "web": "JavaScript/TypeScript"}
